@@ -12,14 +12,24 @@
 /-------------------------------------------------------------------------*/
 
 
-#define TXBUF0	 128	/* Tx/Rx FIFO size [byte]	*/
-#define RXBUF0	 128	/* Tx/Rx FIFO size [byte]	*/
-#define TXBUF1	 128	/* Tx/Rx FIFO size [byte]	*/
-#define RXBUF1	 128	/* Tx/Rx FIFO size [byte]	*/
-#define TXBUF2	 128	/* Tx/Rx FIFO size [byte]	*/
-#define RXBUF2	 128	/* Tx/Rx FIFO size [byte]	*/
-
 #define F_PCLK		96000000UL	/* PCLK frequency (configured by SCKCR.PCK) */
+
+#define USE_SCI0	0	/* Use SCI0 */
+#define TXBUF0		128	/* Tx FIFO size [byte]	*/
+#define RXBUF0		128	/* Rx FIFO size [byte]	*/
+
+#define USE_SCI1	1	/* Use SCI1 */
+#define TXBUF1		128	/* Tx FIFO size [byte]	*/
+#define RXBUF1		128	/* Rx FIFO size [byte]	*/
+
+#define USE_SCI2	0	/* Use SCI2 */
+#define TXBUF2		128	/* Tx FIFO size [byte]	*/
+#define RXBUF2		128	/* Rx FIFO size [byte]	*/
+
+#define USE_SCI3	0	/* Use SCI3 */
+#define TXBUF3		128	/* Tx FIFO size [byte]	*/
+#define RXBUF3		128	/* Rx FIFO size [byte]	*/
+
 
 /*--------------------------------------------------*/
 
@@ -35,7 +45,7 @@ extern void delay_ms(unsigned int);	/* Defined in main.c */
 
 
 
-#if _UART_SCI0
+#if USE_SCI0
 
 static
 volatile struct {
@@ -71,7 +81,7 @@ void uart0_init (
 	SCI0.SMR.BYTE = f;
 	SCI0.BRR = d;
 	delay_ms(2);
-	SCI0.SCR.BYTE = 0xF0;		/* Start SCI (TIE=1,RIE=1,TE=1,RE=0) */
+	SCI0.SCR.BYTE = 0xF0;		/* Start SCI (TIE=1,RIE=1,TE=1,RE=1) */
 
 	/* Clear Tx/Rx Buffer */
 	Fifo0.tri = 0; Fifo0.twi = 0; Fifo0.tct = 0; Fifo0.run = 0;
@@ -194,7 +204,7 @@ void Excep_SCI0_TXI0 (void)
 
 
 
-#if _UART_SCI1
+#if USE_SCI1
 
 static
 volatile struct {
@@ -230,7 +240,7 @@ void uart1_init (
 	SCI1.SMR.BYTE = f;
 	SCI1.BRR = d;
 	delay_ms(2);
-	SCI1.SCR.BYTE = 0xF0;		/* Start SCI (TIE=1,RIE=1,TE=1,RE=0) */
+	SCI1.SCR.BYTE = 0xF0;		/* Start SCI (TIE=1,RIE=1,TE=1,RE=1) */
 
 	/* Clear Tx/Rx Buffer */
 	Fifo1.tri = 0; Fifo1.twi = 0; Fifo1.tct = 0; Fifo1.run = 0;
@@ -353,7 +363,7 @@ void Excep_SCI1_TXI1 (void)
 
 
 
-#if _UART_SCI2
+#if USE_SCI2
 
 static
 volatile struct {
@@ -377,7 +387,7 @@ void uart2_init (
 	MSTP_SCI2 = 0;
 	PORT1.ICR.BIT.B2 = 1;
 
-	SCI1.SCR.BYTE = 0;
+	SCI2.SCR.BYTE = 0;
 	f = 0;							/* CM=0, CHR=0, PE=0, PM=0, STOP=0, MP=0, CKS=0 */
 	if (fmt[0] == 'o') f |= 0x30;	/* PE=1, PM=1 */
 	if (fmt[0] == 'e') f |= 0x20;	/* PE=1 */
@@ -387,19 +397,19 @@ void uart2_init (
 	if (d >= 256) {
 		d /= 4; f |= 1;	/* CKS0=1 */
 	}
-	SCI1.SMR.BYTE = f;
-	SCI1.BRR = d;
+	SCI2.SMR.BYTE = f;
+	SCI2.BRR = d;
 	delay_ms(2);
-	SCI1.SCR.BYTE = 0xF0;		/* Start SCI (TIE=1,RIE=1,TE=1,RE=0) */
+	SCI2.SCR.BYTE = 0xF0;		/* Start SCI (TIE=1,RIE=1,TE=1,RE=1) */
 
 	/* Clear Tx/Rx Buffer */
 	Fifo2.tri = 0; Fifo2.twi = 0; Fifo2.tct = 0; Fifo2.run = 0;
 	Fifo2.rri = 0; Fifo2.rwi = 0; Fifo2.rct = 0;
 
 	/* Enable SCI interrupts */
-	IPR(SCI1, ERI2) = 3; IEN(SCI1, ERI2) = 1;
-	IPR(SCI1, RXI2) = 3; IEN(SCI1, RXI2) = 1;
-	IPR(SCI1, TXI2) = 1; IEN(SCI1, TXI2) = 1;
+	IPR(SCI2, ERI2) = 3; IEN(SCI2, ERI2) = 1;
+	IPR(SCI2, RXI2) = 3; IEN(SCI2, RXI2) = 1;
+	IPR(SCI2, TXI2) = 1; IEN(SCI2, TXI2) = 1;
 }
 
 
@@ -459,7 +469,7 @@ void uart2_putc (
 		SCI2.TDR = dat;
 	}
 
-	IEN(SCI1, TXI2) = 1;	/* Enable Tx Irq */
+	IEN(SCI2, TXI2) = 1;	/* Enable Tx Irq */
 }
 
 
@@ -513,7 +523,7 @@ void Excep_SCI2_TXI2 (void)
 
 
 
-#if _UART_SCI3
+#if USE_SCI3
 
 static
 volatile struct {
@@ -550,7 +560,7 @@ void uart3_init (
 	SCI3.SMR.BYTE = f;
 	SCI3.BRR = d;
 	delay_ms(2);
-	SCI3.SCR.BYTE = 0xF0;		/* Start SCI (TIE=1,RIE=1,TE=1,RE=0) */
+	SCI3.SCR.BYTE = 0xF0;		/* Start SCI (TIE=1,RIE=1,TE=1,RE=1) */
 
 	/* Clear Tx/Rx Buffer */
 	Fifo3.tri = 0; Fifo3.twi = 0; Fifo3.tct = 0; Fifo3.run = 0;

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------*/
-/* FatFs Module Sample Program / Renesas RX220        (C)ChaN, 2016     */
+/* FatFs Module Sample Program / Renesas RX220        (C)ChaN, 2017     */
 /*----------------------------------------------------------------------*/
 
 
@@ -12,6 +12,7 @@
 #include "xprintf.h"
 #include "diskio.h"
 #include "ff.h"
+#include "sound.h"
 
 #define	F_PCLK	32000000UL
 
@@ -77,7 +78,7 @@ void ioinit (void)
 {
 
 	/* P17: LED ON */
-	PORT1.PDR.BIT.B7 = 1;				
+	PORT1.PDR.BIT.B7 = 1;
 	PORT1.PODR.BIT.B7 = 1;
 
 	PORT3.PCR.BIT.B0 = 1;	/* A pull-up on P30(RXD1) */
@@ -127,7 +128,7 @@ FRESULT scan_files (	/* Scan directory in recursive */
 			} else {						/* It is a file  */
 			/*	xprintf("%s/%s\n", path, fn); */
 				AccFiles++;
-				AccSize += Fno.fsize;				/* Accumulate the file size in unit of byte */
+				AccSize += (DWORD)Fno.fsize;	/* Accumulate the file size in unit of byte */
 			}
 		}
 	}
@@ -440,7 +441,7 @@ int main (void)
 					if (Fno.fattrib & AM_DIR) {
 						s2++;
 					} else {
-						s1++; p1 += Fno.fsize;
+						s1++; p1 += (DWORD)Fno.fsize;
 					}
 					xprintf("%c%c%c%c%c %u/%02u/%02u %02u:%02u %9lu  %s\n",
 							(Fno.fattrib & AM_DIR) ? 'D' : '-',
@@ -450,7 +451,7 @@ int main (void)
 							(Fno.fattrib & AM_ARC) ? 'A' : '-',
 							(Fno.fdate >> 9) + 1980, (Fno.fdate >> 5) & 15, Fno.fdate & 31,
 							(Fno.ftime >> 11), (Fno.ftime >> 5) & 63,
-							Fno.fsize, Fno.fname);
+							(DWORD)Fno.fsize, Fno.fname);
 				}
 				xprintf("%4u File(s),%10lu KiB total\n%4u Dir(s)", s1, p1, s2);
 				res = f_getfree(ptr, (DWORD*)&p1, &fs);
@@ -467,7 +468,7 @@ int main (void)
 				*ptr++ = 0;
 				res = f_findfirst(&Dir, &Fno, ptr2, ptr);
 				while (res == FR_OK && Fno.fname[0]) {
-#if _USE_LFN
+#if _USE_LFN && _USE_FIND == 2
 					xprintf("%-12s  %s\n", Fno.altname, Fno.fname);
 #else
 					xprintf("%s\n", Fno.fname);
@@ -488,7 +489,7 @@ int main (void)
 				put_rc(f_close(&File[0]));
 				break;
 
-			case 'e' :	/* fe - Seek file pointer */
+			case 'e' :	/* fe - Move file pointer */
 				if (!xatoi(&ptr, &p1)) break;
 				res = f_lseek(&File[0], p1);
 				put_rc(res);
@@ -569,7 +570,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-
+#if _USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change attribute of an object */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -583,7 +584,7 @@ int main (void)
 				Fno.ftime = ((p1 & 31) << 11) | ((p2 & 63) << 5) | ((p3 >> 1) & 31);
 				put_rc(f_utime(ptr, &Fno));
 				break;
-
+#endif
 			case 'x' : /* fx <src.name> <dst.name> - Copy a file */
 				while (*ptr == ' ') ptr++;
 				ptr2 = strchr(ptr, ' ');
@@ -658,6 +659,18 @@ int main (void)
 				break;
 			}
 			break;
+#ifdef SOUND_DEFINED
+		case 'p' :	/* p <wavfile> - Play RIFF-WAV file */
+			while (*ptr == ' ') ptr++;
+			res = f_open(&File[0], ptr, FA_READ);
+			if (res) {
+				put_rc(res);
+			} else {
+				load_wav(&File[0], "WAV Player", Buff, sizeof Buff);
+				f_close(&File[0]);
+			}
+			break;
+#endif
 		}
 	}
 }

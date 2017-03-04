@@ -54,9 +54,6 @@ void main(void);
 //}
 //#endif
 
-#define PSW_init  0x00010000	// PSW bit pattern
-#define FPSW_init 0x00000000	// FPSW bit base pattern
-
 //extern void srand(_UINT);		// Remove the comment when you use rand()
 //extern _SBYTE *_s1ptr;				// Remove the comment when you use strtok()
 		
@@ -104,21 +101,21 @@ void PowerON_Reset_PC(void)
 	SYSTEM.PRCR.WORD = 0xA500;	/* Lock clock contrl / module stop registers */
 
 
-	_INITSCT();					// Initialize Sections
+	_INITSCT();						// Initialize RAM sections
 
 //	_INIT_IOLIB();					// Use SIM I/O
 
 //	errno=0;						// Remove the comment when you use errno
 //	srand((_UINT)1);					// Remove the comment when you use rand()
 //	_s1ptr=NULL;					// Remove the comment when you use strtok()
-		
+
 //	HardwareSetup();				// Use Hardware Setup
     nop();
 
 //	_CALL_INIT();					// Remove the comment when you use global class object
 
-	set_psw(PSW_init);				// Set Ubit & Ibit for PSW
-//	chg_pmusr();					// Remove the comment when you need to change PSW PMbit (SuperVisor->User)
+	set_psw(0x00010000);			// Initialize PSW (U=0, I=1)
+//	chg_pmusr();					// Change PSW PMbit (SuperVisor->User, ISP->USP)
 
 	main();
 

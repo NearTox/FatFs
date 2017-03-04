@@ -114,8 +114,9 @@ void Isr_MCI (void)
 	xs = XferStat;
 	if (ms & 0x400) {			/* A block transfer completed (DataBlockEnd) */
 		if (xs & 1) {				/* In card read operation */
-			if (ms & 0x100)				/* When last block is received (DataEnd), */
+			if (ms & 0x100) {			/* When last block is received (DataEnd), */
 				GPDMA_SOFT_BREQ = 0x10;	/* Pop off remaining data in the MCIFIFO */
+			}
 			n = (XferWp + 1) % N_BUF;	/* Next write buffer */
 			XferWp = n;
 			if (n == XferRp) xs |= 4;	/* Check block overrun */
@@ -140,8 +141,9 @@ void Isr_GPDMA (void)
 	GPDMA_INT_TCCLR = 0x01;				/* Clear GPDMA interrupt flag */
 
 	if (XferStat & 2) {					/* In write operation */
-		if (--XferWc == N_BUF)			/* Terminate LLI */
+		if (--XferWc == N_BUF) {		/* Terminate LLI */
 			LinkList[XferRp % N_BUF][2] = 0;
+		}
 	}
 }
 
@@ -368,8 +370,7 @@ int send_cmd (		/* Returns 1 when function succeeded otherwise returns 0 */
 		} else {
 			if (s & 0x040) break;	/* CmdRespEnd */
 			if (s & 0x001) { 		/* CmdCrcFail */
-				if (idx == 1 || idx == 12 || idx == 41)	/* Ignore resp CRC error on CMD1/12/41 */
-					break;
+				if (idx == 1 || idx == 12 || idx == 41) break;	/* Ignore resp CRC error on CMD1/12/41 */
 				return 0;
 			}
 			if (s & 0x004) return 0;	/* CmdTimeOut */
@@ -403,9 +404,10 @@ int wait_ready (	/* Returns 1 when card is tran state, otherwise returns 0 */
 
 	Timer[0] = tmr;
 	while (Timer[0]) {
-		if (send_cmd(CMD13, (DWORD)CardRCA << 16, 1, &rc)
-			&& ((rc & 0x01E00) == 0x00800)) break;
-		/* This loop will take a time. Insert rot_rdq() here for multitask envilonment. */
+		if (send_cmd(CMD13, (DWORD)CardRCA << 16, 1, &rc) && ((rc & 0x01E00) == 0x00800)) break;
+
+		/* This loop takes a time. Insert rot_rdq() here for multitask envilonment. */
+
 	}
 	return Timer[0] ? 1 : 0;
 }
@@ -467,7 +469,7 @@ DSTATUS MCI_initialize (void)
 		&& (resp[0] & 0xFFF) == 0x1AA) {		/* The card can work at vdd range of 2.7-3.6V */
 		do {									/* Wait while card is busy state (use ACMD41 with HCS bit) */
 
-			/* This loop will take a time. Insert task rotation here for multitask envilonment. */
+			/* This loop takes a time. Insert task rotation here for multitask envilonment. */
 
 			if (!Timer[0]) goto di_fail;
 		} while (!send_cmd(ACMD41, 0x40FF8000, 1, resp) || !(resp[0] & 0x80000000));
@@ -507,24 +509,20 @@ DSTATUS MCI_initialize (void)
 
 	/*---- Card is 'stby' state ----*/
 
-	if (!send_cmd(CMD9, (DWORD)CardRCA << 16, 2, resp))		/* Get CSD and save it */
-		goto di_fail;
+	if (!send_cmd(CMD9, (DWORD)CardRCA << 16, 2, resp)) goto di_fail;	/* Get CSD and save it */
 	for (n = 0; n < 4; n++) bswap_cp(&CardInfo[n * 4], &resp[n]);
-
-	if (!send_cmd(CMD7, (DWORD)CardRCA << 16, 1, resp))		/* Select card */
-		goto di_fail;
+	if (!send_cmd(CMD7, (DWORD)CardRCA << 16, 1, resp)) goto di_fail;	/* Select card */
 
 	/*---- Card is 'tran' state ----*/
 
 	if (!(ty & CT_BLOCK)) {		/* Set data block length to 512 (for byte addressing cards) */
-		if (!send_cmd(CMD16, 512, 1, resp) || (resp[0] & 0xFDF90000))
-			goto di_fail;
+		if (!send_cmd(CMD16, 512, 1, resp) || (resp[0] & 0xFDF90000)) goto di_fail;
 	}
 
 	if (ty & CT_SDC) {		/* Set wide bus mode (for SDCs) */
-		if (!send_cmd(ACMD6, 2, 1, resp)	/* Set wide bus mode of SDC */
-			|| (resp[0] & 0xFDF90000))
+		if (!send_cmd(ACMD6, 2, 1, resp) || (resp[0] & 0xFDF90000)) {	/* Set wide bus mode of SDC */
 			goto di_fail;
+		}
 		MCI_CLOCK |= 0x800;					/* Set wide bus mode of MCI */
 	}
 
@@ -592,8 +590,9 @@ DRESULT MCI_read (
 		} while (--count);
 	}
 	stop_transfer();						/* Close data path */
-	if (count || cmd == CMD18)				/* Terminate to read if needed */
+	if (count || cmd == CMD18) {			/* Terminate to read if needed */
 		send_cmd(CMD12, 0, 1, &resp);
+	}
 
 	return count ? RES_ERROR : RES_OK;
 }
@@ -662,8 +661,9 @@ DRESULT MCI_write (
 	if (XferStat & 0x8) count = 1;				/* Abort if any MCI error has occured */
 
 	stop_transfer();							/* Close data path */
-	if (count || (cmd == CMD25 && (CardType & CT_SDC)))	/* Terminate to write if needed */
+	if (count || (cmd == CMD25 && (CardType & CT_SDC))) { /* Terminate to write if needed */
 		send_cmd(CMD12, 0, 1, &resp);
+	}
 
 	return count ? RES_ERROR : RES_OK;
 }
@@ -692,8 +692,7 @@ DRESULT MCI_ioctl (
 
 	switch (cmd) {
 		case CTRL_SYNC :	/* Make sure that all data has been written on the media */
-			if (wait_ready(500))	/* Wait for card enters tarn state */
-				res = RES_OK;
+			if (wait_ready(500)) res = RES_OK;	/* Wait for card enters tarn state */
 			break;
 
 		case GET_SECTOR_COUNT :	/* Get number of sectors on the disk (DWORD) */
@@ -713,10 +712,11 @@ DRESULT MCI_ioctl (
 				if (MCI_ioctl(MMC_GET_SDSTAT, sdstat)) break;
 				*(DWORD*)buff = au_size[sdstat[10] >> 4];
 			} else {					/* SDC ver 1.XX or MMC */
-				if (CardType & CT_SD1)	/* SDC v1 */
+				if (CardType & CT_SD1) {	/* SDC v1 */
 					*(DWORD*)buff = (((CardInfo[10] & 63) << 1) + ((WORD)(CardInfo[11] & 128) >> 7) + 1) << ((CardInfo[13] >> 6) - 1);
-				else					/* MMC */
+				} else {					/* MMC */
 					*(DWORD*)buff = ((WORD)((CardInfo[10] & 124) >> 2) + 1) * (((CardInfo[11] & 3) << 3) + ((CardInfo[11] & 224) >> 5) + 1);
+				}
 			}
 			res = RES_OK;
 			break;
@@ -727,8 +727,9 @@ DRESULT MCI_ioctl (
 			if (!(CardType & CT_BLOCK)) {
 				st *= 512; ed *= 512;
 			}
-			if (send_cmd(CMD32, st, 1, resp) && send_cmd(CMD33, ed, 1, resp) && send_cmd(CMD38, 0, 1, resp) && wait_ready(30000))
+			if (send_cmd(CMD32, st, 1, resp) && send_cmd(CMD33, ed, 1, resp) && send_cmd(CMD38, 0, 1, resp) && wait_ready(30000)) {
 				res = RES_OK;
+			}
 			break;
 
 		case CTRL_POWER_OFF :
@@ -799,16 +800,16 @@ void MCI_timerproc (void)
 	if ((n = Timer[1]) > 0) Timer[1] = --n;
 
 	s = Stat;
-
-	if (MMC_WP)			/* Write protected */
+	if (MMC_WP) {			/* Write protected */
 		s |= STA_PROTECT;
-	else				/* Write enabled */
+	} else {				/* Write enabled */
 		s &= ~STA_PROTECT;
-	if (MMC_CD)			/* Card is in socket */
+	}
+	if (MMC_CD) {			/* Card is in socket */
 		s &= ~STA_NODISK;
-	else				/* Socket empty */
+	} else {				/* Socket empty */
 		s |= (STA_NODISK | STA_NOINIT);
-
+	}
 	Stat = s;
 }
 

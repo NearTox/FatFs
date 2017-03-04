@@ -220,8 +220,6 @@ int main (void)
 	xdev_in(uart_getc);		/* Join UART and console */
 	xdev_out(uart_putc);
 	xputs("\nFatFs module test monitor for PIC24F\n");
-	xputs(_USE_LFN ? "LFN Enabled" : "LFN Disabled");
-	xprintf(", Code page: %u\n", _CODE_PAGE);
 
 	for (;;) {
 		xputc('>');
@@ -382,12 +380,7 @@ int main (void)
 				*ptr++ = 0;
 				res = f_findfirst(&dir, &Finfo, ptr2, ptr);
 				while (res == FR_OK && Finfo.fname[0]) {
-					xprintf("%s", Finfo.fname);
-#if _USE_LFN
-					for (p2 = strlen(Finfo.fname); p2 < 12; p2++) xprintf(" ");
-					xprintf("  %s", Lfname); 
-#endif
-					xprintf("\n");
+					xprintf("%s\n", Finfo.fname);
 					res = f_findnext(&dir, &Finfo);
 				}
 				if (res) put_rc(res);
@@ -485,7 +478,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-
+#if _USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change file/dir attribute */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -499,7 +492,7 @@ int main (void)
 				Finfo.ftime = (WORD)(((p1 & 31) << 11) | ((p1 & 63) << 5) | ((p1 >> 1) & 31));
 				put_rc(f_utime(ptr, &Finfo));
 				break;
-
+#endif
 			case 'x' : /* fx <src_name> <dst_name> - Copy file */
 				while (*ptr == ' ') ptr++;
 				ptr2 = strchr(ptr, ' ');

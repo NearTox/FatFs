@@ -54,8 +54,5 @@ void* const Fixed_Vectors[] = {
 //;0xfffffff8  NMI
     (void*) NonMaskableInterrupt,
 //;0xfffffffc  RESET
-//;<<VECTOR DATA START (POWER ON RESET)>>
-//;Power On Reset PC
-PowerON_Reset_PC                                                                                                                             
-//;<<VECTOR DATA END (POWER ON RESET)>>
+	PowerON_Reset_PC                                                                                                                             
 };

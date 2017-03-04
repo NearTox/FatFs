@@ -4,8 +4,8 @@
 
 #include <string.h>
 #include "STM32F100.h"
-#include "uart_32f1.h"
-#include "rtc_32f1.h"
+#include "uart_stm32f1.h"
+#include "rtc_stm32f1.h"
 #include "xprintf.h"
 #include "ff.h"
 #include "diskio.h"
@@ -16,9 +16,6 @@ extern void disk_timerproc (void);
 DWORD AccSize;				/* Work register for fs command */
 WORD AccFiles, AccDirs;
 FILINFO Finfo;
-#if _USE_LFN
-char Lfname[512];
-#endif
 
 char Line[256];				/* Console input buffer */
 BYTE Buff[4096] __attribute__ ((aligned (4))) ;	/* Working buffer */
@@ -89,21 +86,14 @@ FRESULT scan_files (
 	DIR dirs;
 	FRESULT res;
 	BYTE i;
-	char *fn;
 
 
 	if ((res = f_opendir(&dirs, path)) == FR_OK) {
 		i = strlen(path);
 		while (((res = f_readdir(&dirs, &Finfo)) == FR_OK) && Finfo.fname[0]) {
-			if (_FS_RPATH && Finfo.fname[0] == '.') continue;
-#if _USE_LFN
-			fn = *Finfo.lfname ? Finfo.lfname : Finfo.fname;
-#else
-			fn = Finfo.fname;
-#endif
 			if (Finfo.fattrib & AM_DIR) {
 				AccDirs++;
-				*(path+i) = '/'; strcpy(path+i+1, fn);
+				*(path+i) = '/'; strcpy(path+i+1, Finfo.fname);
 				res = scan_files(path);
 				*(path+i) = '\0';
 				if (res != FR_OK) break;
@@ -444,7 +434,7 @@ int main (void)
 					} else {
 						s1++; p1 += Finfo.fsize;
 					}
-					xprintf("%c%c%c%c%c %u/%02u/%02u %02u:%02u %9lu  %-12s  %s\n",
+					xprintf("%c%c%c%c%c %u/%02u/%02u %02u:%02u %9lu  %s\n",
 							(Finfo.fattrib & AM_DIR) ? 'D' : '-',
 							(Finfo.fattrib & AM_RDO) ? 'R' : '-',
 							(Finfo.fattrib & AM_HID) ? 'H' : '-',
@@ -452,12 +442,7 @@ int main (void)
 							(Finfo.fattrib & AM_ARC) ? 'A' : '-',
 							(Finfo.fdate >> 9) + 1980, (Finfo.fdate >> 5) & 15, Finfo.fdate & 31,
 							(Finfo.ftime >> 11), (Finfo.ftime >> 5) & 63,
-							Finfo.fsize, Finfo.fname,
-#if _USE_LFN
-							Lfname);
-#else
-							"");
-#endif
+							Finfo.fsize, Finfo.fname);
 				}
 				xprintf("%4u File(s),%10lu bytes total\n%4u Dir(s)", s1, p1, s2);
 				res = f_getfree(ptr, (DWORD*)&p1, &fs);

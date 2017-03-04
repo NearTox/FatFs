@@ -2,7 +2,7 @@
 PROJECT	= avr_cfc
 
 ### Source files and search directory
-CSRC    = main.c uart.c diskio.c cfc_avr.c rtc.c ff.c unicode_avr.c 
+CSRC    = main.c uart.c diskio.c cfc_avr.c rtc_ds1338.c ff.c unicode_avr.c 
 ASRC    = xitoa.S
 VPATH   = options
 

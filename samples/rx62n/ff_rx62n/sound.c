@@ -26,7 +26,7 @@
 
 
 static
-WAVFIFO *WavFifo;	/* Pointer to sound FIFO control block */
+WAVFIFO *SoundFifo;	/* Pointer to sound FIFO control block */
 
 
 /*-----------------------------------------------------*/
@@ -40,7 +40,7 @@ void Excep_CMTU1_CMT3 (void)
 	uint8_t *buff;
 
 
-	fcb = WavFifo;
+	fcb = SoundFifo;
 	if (!fcb) return;	/* Spurious interrupt? */
 
 	buff = fcb->buff;
@@ -87,7 +87,7 @@ int sound_start (
 {
 	if (fs < 8000 || fs > 48000) return 0;	/* Check fs range */
 
-	WavFifo = fcb;			/* Register FIFO control structure */
+	SoundFifo = fcb;			/* Register FIFO control structure */
 	fcb->ri = 0; fcb->wi = 0; fcb->ct = 0;	/* Flush FIFO */
 
 	/* Configure DAC0/DAC1 as audio output */
@@ -96,11 +96,11 @@ int sound_start (
 	DA.DACR.BYTE = 0xE0;		/* Enable DAC0/1 */
 
 	/* Configure CMT3 as sampling interval timer */
-	MSTP_CMT2 = 0;			/* Enable CMT2/3 */
+	MSTP_CMT2 = 0;				/* Enable CMT2/3 */
 	CMT3.CMCOR = (uint16_t)(F_PCLK / 8 / fs - 1);	/* Audio sampling interval */
 	CMT3.CMCNT = 0;
-	IPR(CMT3, CMI3) = 9;	/* Interrupt priority = 9 */
-	IEN(CMT3, CMI3) = 1;	/* Enable CMT3 compare match irq */
+	IPR(CMT3, CMI3) = 9;		/* Interrupt priority = 9 */
+	IEN(CMT3, CMI3) = 1;		/* Enable CMT3 compare match irq */
 	CMT3.CMCR.BIT.CMIE = 1;
 	CMT.CMSTR1.BIT.STR3 = 1;	/* Start CMT3 */
 
@@ -114,12 +114,12 @@ int sound_start (
 
 void sound_stop (void)
 {
-	CMT3.CMCR.WORD = 0x0040;	/* Start CMT3 */
+	CMT.CMSTR1.BIT.STR3 = 0;	/* Stop CMT3 */
 
 	DA.DADR0 = 0x8000;		/* Return audio outputs to center level */
 	DA.DADR1 = 0x8000;
 
-	WavFifo = 0;		/* Unregister FIFO control structure */
+	SoundFifo = 0;		/* Unregister FIFO control structure */
 }
 
 

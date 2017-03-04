@@ -369,7 +369,7 @@ DRESULT disk_ioctl (
 		break;
 
 	case GET_BLOCK_SIZE:	/* Get internal block size in unit of sector */
-		*(DWORD*)buff = pdrv ? SZ_BLOCK : 1;
+		*(DWORD*)buff = SZ_BLOCK;
 		res = RES_OK;
 		break;
 

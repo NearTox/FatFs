@@ -9,5 +9,5 @@
 /*  NOTE:THIS IS A TYPICAL EXAMPLE.                                    */
 /*                                                                     */
 /***********************************************************************/
-#pragma stacksize su=0x1000  /* Main stack */
-#pragma stacksize si=0x100   /* Interrupt stack */
+#pragma stacksize si=0x1000	/* Interrupt stack */
+#pragma stacksize su=0x0080	/* User stack (not used) */

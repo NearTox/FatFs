@@ -20,8 +20,8 @@
 #define	CS_HIGH()	PORTD |= _BV(5)		/* MMC_CS = high */
 #define MMC_CD		(!(PINB & _BV(3)))	/* Card detected.   yes:true, no:false, default:true */
 #define MMC_WP		(PINB & _BV(2))		/* Write protected. yes:true, no:false, default:false */
-#define	FCLK_SLOW()	UBRR1L = F_CPU/400000/2-1	/* Set slow clock (100-400kHz) */
-#define	FCLK_FAST()	UBRR1L = 0					/* Set fast clock (20HMz max) */
+#define	FCLK_SLOW()	UBRR1L = F_CPU/400000/2-1	/* Set SPI clock for initialization (100-400kHz) */
+#define	FCLK_FAST()	UBRR1L = 0					/* Set SPI clock for read/write (20HMz max) */
 
 
 /*--------------------------------------------------------------------------
@@ -174,9 +174,9 @@ int wait_ready (	/* 1:Ready, 0:Timeout */
 
 
 	Timer2 = wt / 10;
-	do
+	do {
 		d = xchg_spi(0xFF);
-	while (d != 0xFF && Timer2);
+	} while (d != 0xFF && Timer2);
 
 	return (d == 0xFF) ? 1 : 0;
 }
@@ -263,8 +263,7 @@ int xmit_datablock (
 		xchg_spi(0xFF);					/* CRC (Dummy) */
 		xchg_spi(0xFF);
 		resp = xchg_spi(0xFF);			/* Reveive data response */
-		if ((resp & 0x1F) != 0x05)		/* If not accepted, return with error */
-			return 0;
+		if ((resp & 0x1F) != 0x05) return 0;	/* If not accepted, return with error */
 	}
 
 	return 1;
@@ -312,9 +311,9 @@ BYTE send_cmd (		/* Returns R1 resp (bit7==1:Send failed) */
 	/* Receive command response */
 	if (cmd == CMD12) xchg_spi(0xFF);		/* Skip a stuff byte when stop reading */
 	n = 10;								/* Wait for a valid response in timeout of 10 attempts */
-	do
+	do {
 		res = xchg_spi(0xFF);
-	while ((res & 0x80) && --n);
+	} while ((res & 0x80) && --n);
 
 	return res;			/* Return with the response value */
 }
@@ -364,8 +363,9 @@ DSTATUS mmc_disk_initialize (void)
 				ty = CT_MMC; cmd = CMD1;	/* MMCv3 */
 			}
 			while (Timer1 && send_cmd(cmd, 0));			/* Wait for leaving idle state */
-			if (!Timer1 || send_cmd(CMD16, 512) != 0)	/* Set R/W block length to 512 */
+			if (!Timer1 || send_cmd(CMD16, 512) != 0) {	/* Set R/W block length to 512 */
 				ty = 0;
+			}
 		}
 	}
 	CardType = ty;
@@ -446,8 +446,9 @@ DRESULT mmc_disk_write (
 
 	if (count == 1) {	/* Single block write */
 		if ((send_cmd(CMD24, sector) == 0)	/* WRITE_BLOCK */
-			&& xmit_datablock(buff, 0xFE))
+			&& xmit_datablock(buff, 0xFE)) {
 			count = 0;
+		}
 	}
 	else {				/* Multiple block write */
 		if (CardType & CT_SDC) send_cmd(ACMD23, count);
@@ -456,8 +457,7 @@ DRESULT mmc_disk_write (
 				if (!xmit_datablock(buff, 0xFC)) break;
 				buff += 512;
 			} while (--count);
-			if (!xmit_datablock(0, 0xFD))	/* STOP_TRAN token */
-				count = 1;
+			if (!xmit_datablock(0, 0xFD)) count = 1;	/* STOP_TRAN token */
 		}
 	}
 	deselect();
@@ -553,15 +553,16 @@ DRESULT mmc_disk_ioctl (
 		break;
 
 	case MMC_GET_CSD :		/* Receive CSD as a data block (16 bytes) */
-		if (send_cmd(CMD9, 0) == 0 && rcvr_datablock(ptr, 16))		/* READ_CSD */
+		if (send_cmd(CMD9, 0) == 0 && rcvr_datablock(ptr, 16)) {	/* READ_CSD */
 			res = RES_OK;
+		}
 		deselect();
 		break;
 
 	case MMC_GET_CID :		/* Receive CID as a data block (16 bytes) */
-		if (send_cmd(CMD10, 0) == 0 && rcvr_datablock(ptr, 16))		/* READ_CID */
-			
+		if (send_cmd(CMD10, 0) == 0 && rcvr_datablock(ptr, 16)) {	/* READ_CID */
 			res = RES_OK;
+		}
 		deselect();
 		break;
 
@@ -647,17 +648,16 @@ void mmc_disk_timerproc (void)
 	if (n) Timer2 = --n;
 
 	s = Stat;
-
-	if (MMC_WP)				/* Write protected */
+	if (MMC_WP) {				/* Write protected */
 		s |= STA_PROTECT;
-	else					/* Write enabled */
+	} else {					/* Write enabled */
 		s &= ~STA_PROTECT;
-
-	if (MMC_CD)				/* Card inserted */
+	}
+	if (MMC_CD) {				/* Card inserted */
 		s &= ~STA_NODISK;
-	else					/* Socket empty */
+	} else {					/* Socket empty */
 		s |= (STA_NODISK | STA_NOINIT);
-
+	}
 	Stat = s;				/* Update MMC status */
 }
 

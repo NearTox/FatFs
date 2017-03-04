@@ -277,8 +277,7 @@ int xmit_datablock (	/* 1:OK, 0:Failed */
 		xmit_mmc(buff, 512);	/* Xmit the 512 byte data block to MMC */
 		rcvr_mmc(d, 2);			/* Xmit dummy CRC (0xFF,0xFF) */
 		rcvr_mmc(d, 1);			/* Receive data response */
-		if ((d[0] & 0x1F) != 0x05)	/* If not accepted, return with error */
-			return 0;
+		if ((d[0] & 0x1F) != 0x05) return 0;	/* If not accepted, return with error */
 	}
 
 	return 1;
@@ -326,9 +325,9 @@ BYTE send_cmd (		/* Returns command response (bit7==1:Send failed)*/
 	/* Receive command response */
 	if (cmd == CMD12) rcvr_mmc(&d, 1);	/* Skip a stuff byte when stop reading */
 	n = 10;								/* Wait for a valid response in timeout of 10 attempts */
-	do
+	do {
 		rcvr_mmc(&d, 1);
-	while ((d & 0x80) && --n);
+	} while ((d & 0x80) && --n);
 
 	return d;			/* Return with the response value */
 }
@@ -355,8 +354,9 @@ DSTATUS disk_status (void)
 	/* Check if the card is kept initialized */
 	s = Stat;
 	if (!(s & STA_NOINIT)) {
-		if (send_cmd(CMD13, 0))	/* Read card status */
+		if (send_cmd(CMD13, 0)) {	/* Read card status */
 			s = STA_NOINIT;
+		}
 		rcvr_mmc(&d, 1);		/* Receive following half of R2 */
 		deselect();
 	}
@@ -405,8 +405,7 @@ DSTATUS disk_initialize (void)
 				if (send_cmd(cmd, 0) == 0) break;
 				DLY_US(1000);
 			}
-			if (!tmr || send_cmd(CMD16, 512) != 0)	/* Set R/W block length to 512 */
-				ty = 0;
+			if (!tmr || send_cmd(CMD16, 512) != 0) ty = 0;	/* Set R/W block length to 512 */
 		}
 	}
 	CardType = ty;
@@ -469,8 +468,9 @@ DRESULT disk_write (
 
 	if (count == 1) {	/* Single block write */
 		if ((send_cmd(CMD24, sector) == 0)	/* WRITE_BLOCK */
-			&& xmit_datablock(buff, 0xFE))
+			&& xmit_datablock(buff, 0xFE)) {
 			count = 0;
+		}
 	}
 	else {				/* Multiple block write */
 		if (CardType & CT_SDC) send_cmd(ACMD23, count);
@@ -479,8 +479,7 @@ DRESULT disk_write (
 				if (!xmit_datablock(buff, 0xFC)) break;
 				buff += 512;
 			} while (--count);
-			if (!xmit_datablock(0, 0xFD))	/* STOP_TRAN token */
-				count = 1;
+			if (!xmit_datablock(0, 0xFD)) count = 1;	/* STOP_TRAN token */
 		}
 	}
 	deselect();

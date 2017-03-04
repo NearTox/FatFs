@@ -11,7 +11,7 @@
 /
 /-------------------------------------------------------------------------*/
 
-#include "rtc_32f1.h"
+#include "rtc_stm32f1.h"
 
 #define F_LSE	32768	/* LSE oscillator frequency */
 

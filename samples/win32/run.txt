@@ -1,0 +1,7 @@
+
+fi 3
+fj 3:
+fl
+
+This is an autoexec file for debug console.
+Each line read are input as key typings and terminated at blanked line or end of file.

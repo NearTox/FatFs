@@ -9,7 +9,7 @@ WORKDIR = C:\user\Prj_V850\ff_v850
 DEBUG = 
 
 CC	= "C:\Program Files\NEC Electronics Tools\CA850\E3.11a\bin\ca850.exe"
-CFLAGS	= -cpu F3716 -w2 -Xsconst=512 -Xcxxcom -Xkt=s -Xr -Wp,-S
+CFLAGS	= -cpu F3716 -ansi -w2 -Xsconst=512 -Xcxxcom -Xkt=s -Xr -Wp,-S
 AS	= "C:\Program Files\NEC Electronics Tools\CA850\E3.11a\bin\as850.exe"
 ASFLAGS	= -cpu F3716
 LD	= "C:\Program Files\NEC Electronics Tools\CA850\E3.11a\bin\ld850.exe"

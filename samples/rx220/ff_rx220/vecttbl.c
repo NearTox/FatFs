@@ -56,13 +56,7 @@ void (*const Fixed_Vectors[])(void) = {
 //;0xfffffffc  RESET
 //;<<VECTOR DATA START (POWER ON RESET)>>
 //;Power On Reset PC
-PowerON_Reset_PC                                                                                                                             
+	PowerON_Reset_PC                                                                                                                             
 //;<<VECTOR DATA END (POWER ON RESET)>>
 };
 
-#pragma address _MDEreg=0xffffff80 // MDE register (Single Chip Mode)
-#ifdef __BIG
-	const unsigned long _MDEreg = 0xfffffff8; // big
-#else
-	const unsigned long _MDEreg = 0xffffffff; // little
-#endif

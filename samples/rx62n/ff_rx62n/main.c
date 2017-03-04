@@ -8,6 +8,7 @@
 
 
 #include <machine.h>
+#include <string.h>
 #include "iodefine.h"
 #include "vect.h"
 #include "integer.h"
@@ -46,7 +47,7 @@ volatile uint32_t Timer;	/* Performance timer (1kHz increment) */
 /* 1000Hz interval timer (CMT0)                            */
 /*---------------------------------------------------------*/
 
-void Excep_CMTU0_CMT0(void)		/* ISR: vect.h is required */
+void Excep_CMTU0_CMT0 (void)		/* ISR: vect.h is required */
 {
 	static uint16_t b;
 
@@ -78,11 +79,9 @@ void delay_ms (					/* Delay in unit of msec */
 
 
 static
-void clock_init (void)
+void ioinit (void)
 {
 	PORT1.DDR.BIT.B5 = 1;				/* P15:LED ON */
-
-	SYSTEM.SCKCR.LONG = 0x00010000;		/* Select system clock: ICLK=8x(96MHz), BCLK=4x(48MHz), PCLK=8x(96MHz) */
 
 	/* Initialize CMT0 (1kHz IVT) */
 	MSTP_CMT0 = 0;						/* Enable CMT0/1 module */
@@ -123,46 +122,6 @@ DWORD get_fattime (void)
 /*--------------------------------------------------------------------------*/
 
 
-int xstrlen (const char *str)
-{
-	int n = 0;
-
-	while (*str++) n++;
-	return n;
-}
-
-
-char *xstrcpy (char* dst, const char* src)
-{
-	char c, *d = dst;
-
-	do {
-		c = *src++;
-		*d++ = c;
-	} while (c);
-
-	return dst;
-}
-
-
-void *xmemset (void *p, int c, int sz)
-{
-	char *pf = (char*)p;
-
-	while (sz--) *pf++ = (char)c;
-	return p;
-}
-
-
-char *xstrchr (const char *str, int c)
-{
-	while (*str) {
-		if (*str == (char)c) return (char*)str;
-		str++;
-	}
-	return 0;
-}
-
 
 static
 FRESULT scan_files (	/* Scan directory in recursive */
@@ -179,15 +138,15 @@ FRESULT scan_files (	/* Scan directory in recursive */
 		while (((res = f_readdir(&dirs, &Fno)) == FR_OK) && Fno.fname[0]) {	/* Get an entry from the dir */
 			if (Fno.fattrib & AM_DIR) {	/* It is a directory */
 				AccDirs++;
-				i = xstrlen(path);
-				path[i] = '/'; xstrcpy(path+i+1, Fno.fname);	/* Scan the directory */
+				i = strlen(path);
+				path[i] = '/'; strcpy(path+i+1, Fno.fname);	/* Scan the directory */
 				res = scan_files(path);
 				path[i] = '\0';
 				if (res != FR_OK) break;
 			} else {						/* It is a file  */
 			/*	xprintf("%s/%s\n", path, fn); */
 				AccFiles++;
-				AccSize += Fno.fsize;				/* Accumulate the file size in unit of byte */
+				AccSize += (DWORD)Fno.fsize;	/* Accumulate the file size in unit of byte */
 			}
 		}
 	}
@@ -277,7 +236,7 @@ int main (void)
 	static const char *ft[] = {"", "FAT12", "FAT16", "FAT32", "exFAT"};
 
 
-	clock_init();				/* Initialize clock and timer */
+	ioinit();			/* Initialize clock system and timer */
 	delay_ms(10);
 
 	uart1_init(38400, "n81");	/* Initialize SCI1 */
@@ -503,7 +462,7 @@ int main (void)
 					if (Fno.fattrib & AM_DIR) {
 						s2++;
 					} else {
-						s1++; p1 += Fno.fsize;
+						s1++; p1 += (DWORD)Fno.fsize;
 					}
 					xprintf("%c%c%c%c%c %u/%02u/%02u %02u:%02u %9lu  %s\n",
 							(Fno.fattrib & AM_DIR) ? 'D' : '-',
@@ -513,7 +472,7 @@ int main (void)
 							(Fno.fattrib & AM_ARC) ? 'A' : '-',
 							(Fno.fdate >> 9) + 1980, (Fno.fdate >> 5) & 15, Fno.fdate & 31,
 							(Fno.ftime >> 11), (Fno.ftime >> 5) & 63,
-							Fno.fsize, Fno.fname);
+							(DWORD)Fno.fsize, Fno.fname);
 				}
 				xprintf("%4u File(s),%10lu KiB total\n%4u Dir(s)", s1, p1, s2);
 				res = f_getfree(ptr, (DWORD*)&p1, &fs);
@@ -530,7 +489,7 @@ int main (void)
 				*ptr++ = 0;
 				res = f_findfirst(&Dir, &Fno, ptr2, ptr);
 				while (res == FR_OK && Fno.fname[0]) {
-#if _USE_LFN
+#if _USE_LFN && _USE_FIND == 2
 					xprintf("%-12s  %s\n", Fno.altname, Fno.fname);
 #else
 					xprintf("%s\n", Fno.fname);
@@ -612,7 +571,7 @@ int main (void)
 
 			case 'n' :	/* fn <org.name> <new.name> - Change name of an object */
 				while (*ptr == ' ') ptr++;
-				ptr2 = xstrchr(ptr, ' ');
+				ptr2 = strchr(ptr, ' ');
 				if (!ptr2) break;
 				*ptr2++ = 0;
 				while (*ptr2 == ' ') ptr2++;
@@ -632,7 +591,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-
+#if _USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change attribute of an object */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -646,10 +605,10 @@ int main (void)
 				Fno.ftime = ((p1 & 31) << 11) | ((p2 & 63) << 5) | ((p3 >> 1) & 31);
 				put_rc(f_utime(ptr, &Fno));
 				break;
-
+#endif
 			case 'x' : /* fx <src.name> <dst.name> - Copy a file */
 				while (*ptr == ' ') ptr++;
-				ptr2 = xstrchr(ptr, ' ');
+				ptr2 = strchr(ptr, ' ');
 				if (!ptr2) break;
 				*ptr2++ = 0;
 				while (*ptr2 == ' ') ptr2++;

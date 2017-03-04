@@ -33,37 +33,6 @@ DIR Dir;
 /* 100Hz increment timer */
 extern volatile WORD Timer;
 
-/* Real Time Clock */
-extern volatile BYTE rtcYear, rtcMon, rtcMday, rtcHour, rtcMin, rtcSec;
-
-
-
-
-
-/*---------------------------------------------------------*/
-/* User Provided Timer Function for FatFs module           */
-/*---------------------------------------------------------*/
-/* This is a real time clock service to be called from     */
-/* FatFs module. Any valid time must be returned even if   */
-/* the system does not support a real time clock.          */
-
-
-DWORD get_fattime ()
-{
-	DWORD tmr;
-
-
-	set_imask_ccr(1);
-	tmr =	  (((DWORD)rtcYear - 80) << 25)
-			| ((DWORD)rtcMon << 21)
-			| ((DWORD)rtcMday << 16)
-			| (WORD)(rtcHour << 11)
-			| (WORD)(rtcMin << 5)
-			| (WORD)(rtcSec >> 1);
-	set_imask_ccr(0);
-
-	return tmr;
-}
 
 
 /*--------------------------------------------------------------------------*/
@@ -389,7 +358,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-
+#if _USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change file/dir attribute */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -403,7 +372,7 @@ int main (void)
 				Finfo.ftime = ((p1 & 31) << 11) | ((p2 & 63) << 5) | ((p3 >> 1) & 31);
 				put_rc(f_utime(ptr, &Finfo));
 				break;
-
+#endif
 			case 'x' : /* fx <src_name> <dst_name> - Copy file */
 				while (*ptr == ' ') ptr++;
 				ptr2 = strchr(ptr, ' ');
@@ -470,18 +439,6 @@ int main (void)
 			}
 			break;
 
-		case 't' :	/* t [<year> <mon> <mday> <hour> <min> <sec>] */
-			if (xatoi(&ptr, &p1)) {
-				rtcYear = p1 - 1900;
-				xatoi(&ptr, &p1); rtcMon = p1;
-				xatoi(&ptr, &p1); rtcMday = p1;
-				xatoi(&ptr, &p1); rtcHour = p1;
-				xatoi(&ptr, &p1); rtcMin = p1;
-				xatoi(&ptr, &p1); rtcSec = p1;
-			}
-			xprintf("%u/%u/%u %02u:%02u:%02u\n", (WORD)rtcYear+1900, rtcMon, rtcMday, rtcHour, rtcMin, rtcSec);
-			break;
-
 		case '?' :	/* Show Command List */
 			xputs(
 				"[Disk contorls]\n"
@@ -514,8 +471,6 @@ int main (void)
 				" fg <path> - Change current directory\n"
 				" fq - Show current directory\n"
 				" fm <rule> <cluster size> - Create file system\n"
-				"[Misc commands]\n"
-				" t [<year> <month> <mday> <hour> <min> <sec>] - Set/Show current time\n"
 				"\n"
 			);
 		}

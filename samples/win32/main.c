@@ -13,7 +13,6 @@
 
 
 #include <string.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <locale.h>
 #include "diskio.h"
@@ -61,6 +60,7 @@ LONGLONG AccSize;			/* Work register for scan_files() */
 WORD AccFiles, AccDirs;
 FILINFO Finfo;
 
+FILE *AutoExec;
 TCHAR Line[300];			/* Console input/output buffer */
 HANDLE hCon, hKey;
 
@@ -193,12 +193,14 @@ void put_dump (
 
 	_tprintf(_T("%08lX:"), addr);
 
-	for (i = 0; i < cnt; i++)
+	for (i = 0; i < cnt; i++) {
 		_tprintf(_T(" %02X"), buff[i]);
+	}
 
 	_puttchar(' ');
-	for (i = 0; i < cnt; i++)
+	for (i = 0; i < cnt; i++) {
 		_puttchar((TCHAR)((buff[i] >= ' ' && buff[i] <= '~') ? buff[i] : '.'));
+	}
 
 	_puttchar('\n');
 }
@@ -235,7 +237,6 @@ FRESULT scan_files (
 	if ((res = f_opendir(&dir, path)) == FR_OK) {
 		i = _tcslen(path);
 		while (((res = f_readdir(&dir, &Finfo)) == FR_OK) && Finfo.fname[0]) {
-			if (_FS_RPATH && Finfo.fname[0] == '.') continue;
 			if (Finfo.fattrib & AM_DIR) {
 				AccDirs++;
 				*(path+i) = '/'; _tcscpy(path+i+1, Finfo.fname);
@@ -243,7 +244,7 @@ FRESULT scan_files (
 				*(path+i) = '\0';
 				if (res != FR_OK) break;
 			} else {
-//				_tprintf(_T("%s/%s\n"), path, fn);
+//				_tprintf(_T("%s/%s\n"), path, Finfo.fname);
 				AccFiles++;
 				AccSize += Finfo.fsize;
 			}
@@ -345,6 +346,18 @@ void get_uni (
 	DWORD n;
 
 
+	if (AutoExec) {
+		if (_fgetts(buf, len, AutoExec)) {
+			for (i = 0; buf[i] >= 0x20 && i < len - 1; i++) ;
+			if (i) {
+				buf[i] = 0;
+				_putts(buf);
+				return;
+			}
+		}
+		fclose(AutoExec);
+		AutoExec = 0;
+	}
 	for (;;) {
 		ReadConsole(hKey, &buf[i], 1, &n, 0);
 		if (buf[i] == 8) {
@@ -378,6 +391,7 @@ void put_uni (
 
 /*-----------------------------------------------------------------------*/
 /* Main                                                                  */
+/*-----------------------------------------------------------------------*/
 
 
 int _tmain (int argc, TCHAR *argv[])
@@ -389,7 +403,7 @@ int _tmain (int argc, TCHAR *argv[])
 	UINT s1, s2, cnt;
 	WORD w;
 	DWORD dw, ofs = 0, sect = 0, drv = 0;
-	const TCHAR *ft[] = {_T("N/A"), _T("FAT12"), _T("FAT16"), _T("FAT32"), _T("exFAT")};
+	const TCHAR *ft[] = {_T(""), _T("FAT12"), _T("FAT16"), _T("FAT32"), _T("exFAT")};
 	HANDLE h;
 	FRESULT fr;
 	DRESULT dr;
@@ -403,8 +417,9 @@ int _tmain (int argc, TCHAR *argv[])
 	set_console_size(hCon, 100, 35, 500);
 
 	if (GetConsoleCP() != _CODE_PAGE) {
-		if (!SetConsoleCP(_CODE_PAGE) || !SetConsoleOutputCP(_CODE_PAGE))
+		if (!SetConsoleCP(_CODE_PAGE) || !SetConsoleOutputCP(_CODE_PAGE)) {
 			_tprintf(_T("Error: Failed to change the console code page.\n"));
+		}
 	}
 	_stprintf(pool, _T(".%u"), _CODE_PAGE);
 	_tsetlocale(LC_CTYPE, pool);
@@ -433,6 +448,8 @@ int _tmain (int argc, TCHAR *argv[])
 #else
 	_tprintf(_T("\nMultiple partition is disabled.\nEach logical drive is tied to the same physical drive number.\n\n"));
 #endif
+
+	AutoExec = _tfopen(_T("run.txt"), _T("rt"));
 
 
 	for (;;) {
@@ -468,24 +485,28 @@ int _tmain (int argc, TCHAR *argv[])
 				_tprintf(_T("Drive:%u Sector:%lu\n"), p1, p2);
 				if (disk_ioctl((BYTE)p1, GET_SECTOR_SIZE, &w) != RES_OK) break;
 				sect = p2 + 1; drv = p1;
-				for (buf = Buff, ofs = 0; ofs < w; buf += 16, ofs += 16)
+				for (buf = Buff, ofs = 0; ofs < w; buf += 16, ofs += 16) {
 					put_dump(buf, ofs, 16);
+				}
 				break;
 
 			case 'i' :	/* di <pd#> - Initialize physical drive */
 				if (!xatoi(&ptr, &p1)) break;
 				dr = disk_initialize((BYTE)p1);
 				_tprintf(_T("rc=%d\n"), dr);
-				if (disk_ioctl((BYTE)p1, GET_SECTOR_SIZE, &w) == RES_OK)
+				if (disk_ioctl((BYTE)p1, GET_SECTOR_SIZE, &w) == RES_OK) {
 					_tprintf(_T("Sector size = %u\n"), w);
-				if (disk_ioctl((BYTE)p1, GET_SECTOR_COUNT, &dw) == RES_OK)
+				}
+				if (disk_ioctl((BYTE)p1, GET_SECTOR_COUNT, &dw) == RES_OK) {
 					_tprintf(_T("Number of sectors = %u\n"), dw);
+				}
 				break;
 
 			case 'l' :	/* dl <image file> - Load image of a FAT volume into RAM disk */
 				while (*ptr == ' ') ptr++;
-				if (disk_ioctl(0, 200, ptr) == RES_OK)
+				if (disk_ioctl(0, 200, ptr) == RES_OK) {
 					_tprintf(_T("Ok\n"));
+				}
 				break;
 
 			}
@@ -495,8 +516,9 @@ int _tmain (int argc, TCHAR *argv[])
 			switch (*ptr++) {	/* Branch by secondary command character */
 			case 'd' :	/* bd <ofs> - Dump Buff[] */
 				if (!xatoi(&ptr, &p1)) break;
-				for (buf = &Buff[p1], ofs = p1, cnt = 32; cnt; cnt--, buf += 16, ofs += 16)
+				for (buf = &Buff[p1], ofs = p1, cnt = 32; cnt; cnt--, buf += 16, ofs += 16) {
 					put_dump(buf, ofs, 16);
+				}
 				break;
 
 			case 'e' :	/* be <ofs> [<data>] ... - Edit Buff[] */
@@ -513,10 +535,11 @@ int _tmain (int argc, TCHAR *argv[])
 					ptr = Line;
 					if (*ptr == '.') break;
 					if (*ptr < ' ') { p1++; continue; }
-					if (xatoi(&ptr, &p2))
+					if (xatoi(&ptr, &p2)) {
 						Buff[p1++] = (BYTE)p2;
-					else
+					} else {
 						_tprintf(_T("???\n"));
+					}
 				}
 				break;
 
@@ -642,8 +665,9 @@ int _tmain (int argc, TCHAR *argv[])
 				f_closedir(&dir);
 				_tprintf(_T("%4u File(s),%11I64u bytes total\n%4u Dir(s)"), s1, AccSize, s2);
 #if !_FS_READONLY
-				if (f_getfree(ptr, (DWORD*)&p1, &fs) == FR_OK)
+				if (f_getfree(ptr, (DWORD*)&p1, &fs) == FR_OK) {
 					_tprintf(_T(",%12I64u bytes free"), (QWORD)p1 * fs->csize * 512);
+				}
 #endif
 				_tprintf(_T("\n"));
 				break;
@@ -713,8 +737,9 @@ int _tmain (int argc, TCHAR *argv[])
 				if (!xatoll(&ptr, &px)) break;
 				fr = f_lseek(file, (FSIZE_t)px);
 				put_rc(fr);
-				if (fr == FR_OK)
+				if (fr == FR_OK) {
 					_tprintf(_T("fptr = %I64u(0x%I64X)\n"), (QWORD)file[0].fptr, (QWORD)file[0].fptr);
+				}
 				break;
 #if _USE_FASTSEEK
 			case 'E' :	/* fE - Enable fast seek and initialize cluster link map table */
@@ -873,7 +898,7 @@ int _tmain (int argc, TCHAR *argv[])
 				if (!xatoi(&ptr, &p1) || (UINT)p1 > 9 || !xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				_tprintf(_T("The volume will be formatted. Are you sure? (Y/n)="));
 				get_uni(ptr, 256);
-				if (*ptr != 'Y') break;
+				if (*ptr != _T('Y')) break;
 				_stprintf(ptr, _T("%u:"), (UINT)p1);
 				put_rc(f_mkfs(ptr, (BYTE)p2, p3, Buff, sizeof Buff));
 				break;

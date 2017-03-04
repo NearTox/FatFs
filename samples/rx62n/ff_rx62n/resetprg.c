@@ -30,11 +30,10 @@
 #include	<_h_c_lib.h>
 //#include	<stddef.h>					// Remove the comment when you use errno
 //#include 	<stdlib.h>					// Remove the comment when you use rand()
+#include	"iodefine.h"
 #include	"typedefine.h"
 #include	"stacksct.h"
 
-#pragma inline_asm Change_PSW_PM_to_UserMode
-static void Change_PSW_PM_to_UserMode(void);
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,8 +53,6 @@ void main(void);
 //}
 //#endif
 
-#define PSW_init  0x00010000
-#define FPSW_init 0x00000100
 
 //extern void srand(_UINT);		// Remove the comment when you use rand()
 //extern _SBYTE *_s1ptr;				// Remove the comment when you use strtok()
@@ -84,42 +81,33 @@ void main(void);
 void PowerON_Reset_PC(void)
 { 
 	set_intb((void*)(unsigned long)__sectop("C$VECT"));
-	set_fpsw(FPSW_init);
+	set_fpsw(0x00000100);			// Initialize FPSW (DN=1)
 
-	_INITSCT();
+	/* Initialize Clock System */
+	SYSTEM.SCKCR.LONG = 0x00010000;	/* Select system clock: ICLK=8x(96MHz), BCLK=4x(48MHz), PCLK=8x(96MHz) */
+
+	_INITSCT();						// Initialize RAM sections
 
 //	_INIT_IOLIB();					// Use SIM I/O
 
 //	errno=0;						// Remove the comment when you use errno
 //	srand((_UINT)1);					// Remove the comment when you use rand()
 //	_s1ptr=NULL;					// Remove the comment when you use strtok()
-		
+
 //	HardwareSetup();				// Use Hardware Setup
     nop();
 
 //	_CALL_INIT();					// Remove the comment when you use global class object
 
-	set_psw(PSW_init);				// Set Ubit & Ibit for PSW
-	Change_PSW_PM_to_UserMode();	// Change PSW PMbit (SuperVisor->User)
+	set_psw(0x00010000);			// Initialize PSW (U=0, I=1)
+//	chg_pmusr();					// Change PSW PMbit (SuperVisor->User, ISP->USP)
 
 	main();
 
 //	_CLOSEALL();					// Use SIM I/O
-	
+
 //	_CALL_END();					// Remove the comment when you use global class object
 
 	brk();
 }
 
-static void Change_PSW_PM_to_UserMode(void)
-{
-	MVFC   PSW,R1
-	OR     #00100000h,R1
-	PUSH.L R1
-	MVFC   PC,R1
-	ADD    #10,R1
-	PUSH.L R1
-	RTE
-	NOP
-	NOP
-}

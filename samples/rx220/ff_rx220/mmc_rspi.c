@@ -44,7 +44,6 @@
 	CS_HIGH();										\
 	PORTC.PDR.BIT.B4 = 1; /* CS=OUT */				\
 	PORTC.PCR.BIT.B3 = 1; /* A pull-up on INS */	\
-	PORTC.PCR.BIT.B2 = 1; /* A pull-up on WP */		\
 }
 
 
@@ -118,7 +117,7 @@ void power_on (void)
 	SYSTEM.PRCR.WORD = 0xA500;
 
 	/* Attach RSPI module to I/O pads */
-	MPC.PWPR.BYTE = 0x40; MPC.PWPR.BYTE = 0x40;
+	MPC.PWPR.BYTE = 0x40; MPC.PWPR.BYTE = 0x40;	/* Unlock MPC */
 #if RSPI_A == 1
 	MPC.PA5PFS.BYTE = 0x0D; PORTA.PMR.BIT.B5 = 1;	/* SCLK -> PA5 */
 	MPC.PA6PFS.BYTE = 0x0D; PORTA.PMR.BIT.B6 = 1;	/* MOSI -> PA6 */
@@ -130,7 +129,7 @@ void power_on (void)
 	MPC.PC7PFS.BYTE = 0x0D; PORTC.PMR.BIT.B7 = 1;	/* MISO -> PB7 */
 	PORTC.PCR.BIT.B7 = 1;	/* A pull-up on MISO */
 #endif
-	MPC.PWPR.BYTE = 0x80;
+	MPC.PWPR.BYTE = 0x80;	/* Lock MPC */
 
 	/* Initialize RSPI module */
 	RSPI.SPCR.BYTE = 0;			/* Stop RSPI module */
@@ -233,7 +232,9 @@ int wait_ready (	/* 1:Ready, 0:Timeout */
 
 	do {
 		if (xchg_spi(0xFF) == 0xFF) return 1;	/* Card goes ready */
+
 		/* This loop takes a time. Insert rot_rdq() here for multitask envilonment. */
+
 	} while (Timer2);	/* Wait until card goes ready or timeout */
 
 	return 0;	/* Timeout occured */
@@ -264,7 +265,7 @@ int select (void)	/* 1:OK, 0:Timeout */
 	CS_LOW();		/* Set CS# low */
 	xchg_spi(0xFF);	/* Dummy clock (force DO enabled) */
 
-	if (wait_ready(500)) return 1;	/* Wait for card ready */
+	if (wait_ready(500)) return 1;	/* Leading busy check: Wait for card ready. */
 
 	deselect();
 	return 0;	/* Failed to select the card due to timeout */
@@ -292,6 +293,7 @@ int rcvr_datablock (	/* 1:OK, 0:Error */
 		/* This loop will take a time. Insert rot_rdq() here for multitask envilonment. */
 
 	} while ((token == 0xFF) && Timer1);
+
 	if (token != 0xFE) return 0;	/* Function fails if invalid DataStart token or timeout */
 
 	rcvr_spi_multi(buff, btr);		/* Store trailing data to the buffer */
@@ -316,18 +318,19 @@ int xmit_datablock (	/* 1:OK, 0:Failed */
 	BYTE resp;
 
 
-	if (!wait_ready(500)) return 0;		/* Wait for card ready */
+	if (!wait_ready(500)) return 0;		/* Leading busy check: Wait for card gets ready to accept data block */
 
 	xchg_spi(token);					/* Send token */
-	if (token != 0xFD) {				/* Send data if token is other than StopTran */
-		xmit_spi_multi(buff, 512);		/* Data */
-		xchg_spi(0xFF); xchg_spi(0xFF);	/* Dummy CRC */
+	if (token == 0xFD) return 1;		/* Do not send data if token is StopTran */
 
-		resp = xchg_spi(0xFF);			/* Receive data resp */
-		if ((resp & 0x1F) != 0x05)		/* Function fails if the data packet was not accepted */
-			return 0;
-	}
-	return 1;
+	xmit_spi_multi(buff, 512);			/* Data */
+	xchg_spi(0xFF); xchg_spi(0xFF);		/* Dummy CRC */
+
+	resp = xchg_spi(0xFF);				/* Receive data resp */
+
+	return (resp & 0x1F) == 0x05 ? 1 : 0;	/* Data was accepted or not */
+
+	/* Busy check is done at next transmission */
 }
 #endif /* _USE_WRITE */
 
@@ -372,9 +375,9 @@ BYTE send_cmd (		/* Return value: R1 resp (bit7==1:Failed to send) */
 	/* Receive command resp */
 	if (cmd == CMD12) xchg_spi(0xFF);	/* Diacard stuff byte on CMD12 */
 	n = 10;							/* Wait for response (10 bytes max) */
-	do
+	do {
 		res = xchg_spi(0xFF);
-	while ((res & 0x80) && --n);
+	} while ((res & 0x80) && --n);
 
 	return res;						/* Return received response */
 }
@@ -422,9 +425,8 @@ DSTATUS disk_initialize (
 			} else {
 				ty = CT_MMC; cmd = CMD1;	/* MMCv3 (CMD1(0)) */
 			}
-			while (Timer1 && send_cmd(cmd, 0)) ;		/* Wait for end of initialization */
-			if (!Timer1 || send_cmd(CMD16, 512) != 0)	/* Set block length: 512 */
-				ty = 0;
+			while (Timer1 && send_cmd(cmd, 0) != 0) ;			/* Wait for end of initialization */
+			if (!Timer1 || send_cmd(CMD16, 512) != 0) ty = 0;	/* Set block length: 512 */
 		}
 	}
 	CardType = ty;	/* Card type */
@@ -476,8 +478,9 @@ DRESULT disk_read (
 
 	if (count == 1) {	/* Single sector read */
 		if ((send_cmd(CMD17, sector) == 0)	/* READ_SINGLE_BLOCK */
-			&& rcvr_datablock(buff, 512))
+			&& rcvr_datablock(buff, 512)) {
 			count = 0;
+		}
 	}
 	else {				/* Multiple sector read */
 		if (send_cmd(CMD18, sector) == 0) {	/* READ_MULTIPLE_BLOCK */
@@ -515,8 +518,9 @@ DRESULT disk_write (
 
 	if (count == 1) {	/* Single sector write */
 		if ((send_cmd(CMD24, sector) == 0)	/* WRITE_BLOCK */
-			&& xmit_datablock(buff, 0xFE))
+			&& xmit_datablock(buff, 0xFE)) {
 			count = 0;
+		}
 	}
 	else {				/* Multiple sector write */
 		if (CardType & CT_SDC) send_cmd(ACMD23, count);
@@ -525,8 +529,7 @@ DRESULT disk_write (
 				if (!xmit_datablock(buff, 0xFC)) break;
 				buff += 512;
 			} while (--count);
-			if (!xmit_datablock(0, 0xFD))	/* STOP_TRAN token */
-				count = 1;
+			if (!xmit_datablock(0, 0xFD)) count = 1;	/* STOP_TRAN token */
 		}
 	}
 	deselect();
@@ -607,8 +610,9 @@ DRESULT disk_ioctl (
 		if (!(CardType & CT_BLOCK)) {
 			st *= 512; ed *= 512;
 		}
-		if (send_cmd(CMD32, st) == 0 && send_cmd(CMD33, ed) == 0 && send_cmd(CMD38, 0) == 0 && wait_ready(30000))	/* Erase sector block */
+		if (send_cmd(CMD32, st) == 0 && send_cmd(CMD33, ed) == 0 && send_cmd(CMD38, 0) == 0 && wait_ready(30000)) {	/* Erase sector block */
 			res = RES_OK;
+		}
 		break;
 
 	/* Following command are not used by FatFs module */
@@ -619,15 +623,15 @@ DRESULT disk_ioctl (
 		break;
 
 	case MMC_GET_CSD :		/* Read CSD (16 bytes) */
-		if (send_cmd(CMD9, 0) == 0		/* READ_CSD */
-			&& rcvr_datablock(ptr, 16))
+		if (send_cmd(CMD9, 0) == 0 && rcvr_datablock(ptr, 16)) {	/* READ_CSD */
 			res = RES_OK;
+		}
 		break;
 
 	case MMC_GET_CID :		/* Read CID (16 bytes) */
-		if (send_cmd(CMD10, 0) == 0		/* READ_CID */
-			&& rcvr_datablock(ptr, 16))
+		if (send_cmd(CMD10, 0) == 0 && rcvr_datablock(ptr, 16)) {	/* READ_CID */
 			res = RES_OK;
+		}
 		break;
 
 	case MMC_GET_OCR :		/* Read OCR (4 bytes) */
@@ -640,8 +644,7 @@ DRESULT disk_ioctl (
 	case MMC_GET_SDSTAT :	/* Read SD status (64 bytes) */
 		if (send_cmd(ACMD13, 0) == 0) {	/* SD_STATUS */
 			xchg_spi(0xFF);
-			if (rcvr_datablock(ptr, 64))
-				res = RES_OK;
+			if (rcvr_datablock(ptr, 64)) res = RES_OK;
 		}
 		break;
 
@@ -675,14 +678,16 @@ void disk_timerproc (void)
 	if (n) Timer2 = --n;
 
 	s = Stat;
-	if (WPRT)		/* Write protected */
+	if (WPRT) {		/* Write protected */
 		s |= STA_PROTECT;
-	else		/* Write enabled */
+	} else {		/* Write enabled */
 		s &= ~STA_PROTECT;
-	if (INS)	/* Card is in socket */
+	}
+	if (INS) {		/* Card is in socket */
 		s &= ~STA_NODISK;
-	else		/* Socket empty */
+	} else {		/* Socket empty */
 		s |= (STA_NODISK | STA_NOINIT);
+	}
 	Stat = s;
 }
 

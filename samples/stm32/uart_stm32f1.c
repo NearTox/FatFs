@@ -11,7 +11,7 @@
 /
 /-------------------------------------------------------------------------*/
 
-#include "uart_32f1.h"
+#include "uart_stm32f1.h"
 
 #define F_PCLK1	24000000	/* APB1 clock for USART2/3  */
 #define F_PCLK2	24000000	/* APB2 clock for USART1 */

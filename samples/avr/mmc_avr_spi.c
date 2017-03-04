@@ -20,8 +20,8 @@
 #define	CS_HIGH()		To be filled	/* Set MMC_CS = high */
 #define MMC_CD			To be filled	/* Test if card detected.   yes:true, no:false, default:true */
 #define MMC_WP			To be filled	/* Test if write protected. yes:true, no:false, default:false */
-#define	FCLK_SLOW()		To be filled	/* Set SPI slow clock (100-400kHz) */
-#define	FCLK_FAST()		To be filled	/* Set SPI fast clock (20MHz max) */
+#define	FCLK_SLOW()		To be filled	/* Set SPI clock for initialization (100-400kHz) */
+#define	FCLK_FAST()		To be filled	/* Set SPI clock for read/write (20MHz max) */
 
 
 /*--------------------------------------------------------------------------
@@ -171,6 +171,9 @@ int wait_ready (	/* 1:Ready, 0:Timeout */
 	Timer2 = wt / 10;
 	do
 		d = xchg_spi(0xFF);
+
+		/* This loop takes a time. Insert rot_rdq() here for multitask envilonment. */
+
 	while (d != 0xFF && Timer2);
 
 	return (d == 0xFF) ? 1 : 0;
@@ -200,10 +203,11 @@ int select (void)	/* 1:Successful, 0:Timeout */
 {
 	CS_LOW();		/* Set CS# low */
 	xchg_spi(0xFF);	/* Dummy clock (force DO enabled) */
-	if (wait_ready(500)) return 1;	/* Wait for card ready */
 
-	deselect();
-	return 0;	/* Timeout */
+	if (wait_ready(500)) return 1;	/* Leading busy check: Wait for card ready */
+
+	deselect();		/* Timeout */
+	return 0;
 }
 
 
@@ -250,19 +254,19 @@ int xmit_datablock (
 	BYTE resp;
 
 
-	if (!wait_ready(500)) return 0;
+	if (!wait_ready(500)) return 0;		/* Leading busy check: Wait for card ready to accept data block */
 
 	xchg_spi(token);					/* Xmit data token */
-	if (token != 0xFD) {	/* Is data token */
-		xmit_spi_multi(buff, 512);		/* Xmit the data block to the MMC */
-		xchg_spi(0xFF);					/* CRC (Dummy) */
-		xchg_spi(0xFF);
-		resp = xchg_spi(0xFF);			/* Reveive data response */
-		if ((resp & 0x1F) != 0x05)		/* If not accepted, return with error */
-			return 0;
-	}
+	if (token == 0xFD) return 1;		/* Do not send data if token is StopTran */
 
-	return 1;
+	xmit_spi_multi(buff, 512);			/* Data */
+	xchg_spi(0xFF); xchg_spi(0xFF);		/* Dummy CRC */
+
+	resp = xchg_spi(0xFF);				/* Receive data resp */
+
+	return (resp & 0x1F) == 0x05 ? 1 : 0;	/* Data was accepted or not */
+
+	/* Busy check is done at next transmission */
 }
 #endif
 
@@ -441,8 +445,9 @@ DRESULT mmc_disk_write (
 
 	if (count == 1) {	/* Single block write */
 		if ((send_cmd(CMD24, sector) == 0)	/* WRITE_BLOCK */
-			&& xmit_datablock(buff, 0xFE))
+			&& xmit_datablock(buff, 0xFE)) {
 			count = 0;
+		}
 	}
 	else {				/* Multiple block write */
 		if (CardType & CT_SDC) send_cmd(ACMD23, count);
@@ -451,8 +456,7 @@ DRESULT mmc_disk_write (
 				if (!xmit_datablock(buff, 0xFC)) break;
 				buff += 512;
 			} while (--count);
-			if (!xmit_datablock(0, 0xFD))	/* STOP_TRAN token */
-				count = 1;
+			if (!xmit_datablock(0, 0xFD)) count = 1;	/* STOP_TRAN token */
 		}
 	}
 	deselect();
@@ -536,8 +540,9 @@ DRESULT mmc_disk_ioctl (
 		if (!(CardType & CT_BLOCK)) {
 			st *= 512; ed *= 512;
 		}
-		if (send_cmd(CMD32, st) == 0 && send_cmd(CMD33, ed) == 0 && send_cmd(CMD38, 0) == 0 && wait_ready(30000))	/* Erase sector block */
+		if (send_cmd(CMD32, st) == 0 && send_cmd(CMD33, ed) == 0 && send_cmd(CMD38, 0) == 0 && wait_ready(30000)) {	/* Erase sector block */
 			res = RES_OK;	/* FatFs does not check result of this command */
+		}
 		break;
 
 	/* Following commands are never used by FatFs module */
@@ -548,15 +553,16 @@ DRESULT mmc_disk_ioctl (
 		break;
 
 	case MMC_GET_CSD :		/* Receive CSD as a data block (16 bytes) */
-		if (send_cmd(CMD9, 0) == 0 && rcvr_datablock(ptr, 16))		/* READ_CSD */
+		if (send_cmd(CMD9, 0) == 0 && rcvr_datablock(ptr, 16)) {	/* READ_CSD */
 			res = RES_OK;
+		}
 		deselect();
 		break;
 
 	case MMC_GET_CID :		/* Receive CID as a data block (16 bytes) */
-		if (send_cmd(CMD10, 0) == 0 && rcvr_datablock(ptr, 16))		/* READ_CID */
-			
+		if (send_cmd(CMD10, 0) == 0 && rcvr_datablock(ptr, 16)) {	/* READ_CID */
 			res = RES_OK;
+		}
 		deselect();
 		break;
 
@@ -643,16 +649,16 @@ void mmc_disk_timerproc (void)
 
 	s = Stat;
 
-	if (MMC_WP)				/* Write protected */
+	if (MMC_WP) {			/* Write protected */
 		s |= STA_PROTECT;
-	else					/* Write enabled */
+	} else {				/* Write enabled */
 		s &= ~STA_PROTECT;
-
-	if (MMC_CD)				/* Card inserted */
+	}
+	if (MMC_CD) {			/* Card inserted */
 		s &= ~STA_NODISK;
-	else					/* Socket empty */
+	} else {				/* Socket empty */
 		s |= (STA_NODISK | STA_NOINIT);
-
+	}
 	Stat = s;				/* Update MMC status */
 }
 

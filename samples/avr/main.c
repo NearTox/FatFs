@@ -325,10 +325,11 @@ int main (void)
 					ptr = line;
 					if (*ptr == '.') break;
 					if (*ptr < ' ') { p1++; continue; }
-					if (xatoi(&ptr, &p2))
+					if (xatoi(&ptr, &p2)) {
 						Buff[p1++] = (BYTE)p2;
-					else
+					} else {
 						xputs(PSTR("???\n"));
+					}
 				}
 				break;
 
@@ -371,7 +372,9 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				ptr2 = ptr;
 				fr = f_getfree(ptr, (DWORD*)&p2, &fs);
-				if (fr) { put_rc(fr); break; }
+				if (fr) { 
+					put_rc(fr); break;
+				}
 				xprintf(PSTR("FAT type = %u\nBytes/Cluster = %lu\nNumber of FATs = %u\n"
 							 "Root DIR entries = %u\nSectors/FAT = %lu\nNumber of clusters = %lu\n"
 							 "FAT start (lba) = %lu\nDIR start (lba,clustor) = %lu\nData start (lba) = %lu\n\n"),
@@ -381,7 +384,9 @@ int main (void)
 				);
 #if _USE_LABEL
 				fr = f_getlabel(ptr2, (char*)Buff, (DWORD*)&p1);
-				if (fr) { put_rc(fr); break; }
+				if (fr) {
+					put_rc(fr); break;
+				}
 				xprintf(Buff[0] ? PSTR("Volume name is %s\n") : PSTR("No volume label\n"), Buff);
 				xprintf(PSTR("Volume S/N is %04X-%04X\n"), (WORD)((DWORD)p1 >> 16), (WORD)(p1 & 0xFFFF));
 #endif
@@ -389,7 +394,9 @@ int main (void)
 				AccSize = AccFiles = AccDirs = 0;
 				strcpy((char*)Buff, ptr);
 				fr = scan_files((char*)Buff);
-				if (fr) { put_rc(fr); break; }
+				if (fr) {
+					put_rc(fr); break;
+				}
 				xprintf(PSTR("\r%u files, %lu bytes.\n%u folders.\n"
 							 "%lu KB total disk space.\n%lu KB available.\n"),
 						AccFiles, AccSize, AccDirs,
@@ -400,7 +407,9 @@ int main (void)
 			case 'l' :	/* fl [<path>] - Directory listing */
 				while (*ptr == ' ') ptr++;
 				fr = f_opendir(&Dir, ptr);
-				if (fr) { put_rc(fr); break; }
+				if (fr) {
+					put_rc(fr); break;
+				}
 				p1 = s1 = s2 = 0;
 				for(;;) {
 					fr = f_readdir(&Dir, &Finfo);
@@ -444,8 +453,9 @@ int main (void)
 				if (!xatoi(&ptr, &p1)) break;
 				fr = f_lseek(&File[0], p1);
 				put_rc(fr);
-				if (fr == FR_OK)
+				if (fr == FR_OK) {
 					xprintf(PSTR("fptr = %lu(0x%lX)\n"), (DWORD)File[0].fptr, (DWORD)File[0].fptr);
+				}
 				break;
 
 			case 'r' :	/* fr <len> - read file */
@@ -474,7 +484,9 @@ int main (void)
 						cnt = (WORD)p1; p1 = 0;
 					}
 					fr = f_read(&File[0], Buff, cnt, &cnt);
-					if (fr != FR_OK) { put_rc(fr); break; }
+					if (fr != FR_OK) {
+						put_rc(fr); break;
+					}
 					if (!cnt) break;
 					put_dump(Buff, ofs, cnt);
 					ofs += 16;
@@ -490,7 +502,9 @@ int main (void)
 					if (p1 >= blen)	{ cnt = blen; p1 -= blen; }
 					else 			{ cnt = (WORD)p1; p1 = 0; }
 					fr = f_write(&File[0], Buff, cnt, &s2);
-					if (fr != FR_OK) { put_rc(fr); break; }
+					if (fr != FR_OK) {
+						put_rc(fr); break;
+					}
 					p2 += s2;
 					if (cnt != s2) break;
 				}
@@ -552,8 +566,7 @@ int main (void)
 				xprintf(PSTR("Opening \"%s\""), ptr);
 				fr = f_open(&File[0], ptr, FA_OPEN_EXISTING | FA_READ);
 				if (fr) {
-					put_rc(fr);
-					break;
+					put_rc(fr); break;
 				}
 				xprintf(PSTR("\nCreating \"%s\""), ptr2);
 				fr = f_open(&File[1], ptr2, FA_CREATE_ALWAYS | FA_WRITE);
@@ -592,10 +605,11 @@ int main (void)
 #if _FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				fr = f_getcwd(line, sizeof line);
-				if (fr)
+				if (fr) {
 					put_rc(fr);
-				else
+				} else {
 					xprintf(PSTR("%s\n"), line);
+				}
 				break;
 #endif
 #endif
@@ -667,6 +681,7 @@ int main (void)
 			" fo <mode> <file> - Open a file\n"
 			" fc - Close the file\n"
 			" fe <ofs> - Move fp in normal seek\n"
+			" fh <fsz> <opt> - Allocate a contiguous block to the file\n"
 			" fd <len> - Read and dump the file\n"
 			" fr <len> - Read the file\n"
 			" fw <len> <val> - Write to the file\n"

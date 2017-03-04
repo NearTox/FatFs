@@ -7,15 +7,7 @@
 [GENERAL_DATA]
 [BREAKPOINTS]
 [OPEN_WORKSPACE_FILES]
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\iodefine.h" 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\main.c" 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\mmc_rspi.c" 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\uart_sci.c" 
 [WORKSPACE_FILE_STATES]
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\iodefine.h" 66 66 1031 594 0 3 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\main.c" 88 88 1031 594 0 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\mmc_rspi.c" -4 -23 1325 907 1 1 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\uart_sci.c" 0 0 1325 907 0 0 
 [LOADED_PROJECTS]
 "ff_rx220" 
 [END]

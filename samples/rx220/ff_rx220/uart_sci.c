@@ -63,7 +63,7 @@ void uart1_init (
 	uint32_t f, d;
 
 	/* Attach SCI1 to I/O pad */
-	MPC.PWPR.BYTE = 0x40; MPC.PWPR.BYTE = 0x40;
+	MPC.PWPR.BYTE = 0x40; MPC.PWPR.BYTE = 0x40;	/* Unlock MPC */
 #if USE_SCI1 == 1
 	MPC.P26PFS.BYTE = 0x0A; PORT2.PMR.BIT.B6 = 1;
 	MPC.P30PFS.BYTE = 0x0A; PORT3.PMR.BIT.B0 = 1;
@@ -71,7 +71,7 @@ void uart1_init (
 	MPC.P15PFS.BYTE = 0x0A; PORT1.PMR.BIT.B5 = 1;
 	MPC.P16PFS.BYTE = 0x0A; PORT1.PMR.BIT.B6 = 1;
 #endif
-	MPC.PWPR.BYTE = 0x80;
+	MPC.PWPR.BYTE = 0x80;	/* Lock MPC */
 
 	/* Enable SCI1 */
 	SYSTEM.PRCR.WORD = 0xA502;
@@ -234,7 +234,7 @@ void uart5_init (
 	uint32_t f, d;
 
 	/* Attach SCI5 to I/O pad */
-	MPC.PWPR.BYTE = 0x40; MPC.PWPR.BYTE = 0x40;
+	MPC.PWPR.BYTE = 0x40; MPC.PWPR.BYTE = 0x40;	/* Unlock MPC */
 #if USE_SCI5 == 1
 	MPC.PA3PFS.BYTE = 0x0A; PORTA.PMR.BIT.B3 = 1;
 	MPC.PA4PFS.BYTE = 0x0A; PORTA.PMR.BIT.B4 = 1;
@@ -242,7 +242,7 @@ void uart5_init (
 	MPC.PC2PFS.BYTE = 0x0A; PORTC.PMR.BIT.B2 = 1;
 	MPC.PC3PFS.BYTE = 0x0A; PORTC.PMR.BIT.B3 = 1;
 #endif
-	MPC.PWPR.BYTE = 0x80;
+	MPC.PWPR.BYTE = 0x80;	/* Lock MPC */
 
 	/* Enable SCI5 */
 	SYSTEM.PRCR.WORD = 0xA502;
@@ -574,12 +574,12 @@ void uart9_init (
 	uint32_t f, d;
 
 	/* Attach SCI9 to I/O pad */
-	MPC.PWPR.BYTE = 0x40; MPC.PWPR.BYTE = 0x40;
+	MPC.PWPR.BYTE = 0x40; MPC.PWPR.BYTE = 0x40;	/* Unlock MPC */
 #if USE_SCI9 == 1
 	MPC.PB6PFS.BYTE = 0x0A; PORTB.PMR.BIT.B6 = 1;
 	MPC.PB7PFS.BYTE = 0x0A; PORTb.PMR.BIT.B7 = 1;
 #endif
-	MPC.PWPR.BYTE = 0x80;
+	MPC.PWPR.BYTE = 0x80;	/* Lock MPC */
 
 	/* Enable SCI9 */
 	SYSTEM.PRCR.WORD = 0xA502;

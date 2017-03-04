@@ -251,8 +251,9 @@ int rtc_init (void)
 	if (buf[7] & 0x20) {	/* When data has been volatiled, set default time */
 		/* Clear nv-ram. Reg[8..63] */
 		memset(buf, 0, 8);
-		for (adr = 8; adr < 64; adr += 8)
+		for (adr = 8; adr < 64; adr += 8) {
 			iic_write(0x0D, adr, 8, buf);
+		}
 		/* Reset time to Jan 1, '08. Reg[0..7] */
 		buf[4] = 1; buf[5] = 1; buf[6] = 8;
 		iic_write(0x0D, 0, 8, buf);
