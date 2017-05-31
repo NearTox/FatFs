@@ -22,14 +22,14 @@ FILINFO Finfo;
 char Line[120];				/* Console input buffer */
 BYTE Buff[8192];			/* Working buffer */
 
-FATFS FatFs[_VOLUMES];		/* File system object for each logical drive */
+FATFS FatFs[FF_VOLUMES];	/* File system object for each logical drive */
 FIL File[2];				/* File objects */
 DIR Dir;					/* Directory object */
 
 
 volatile UINT Timer;		/* 1kHz increment timer */
 
-volatile BYTE rtcYear = 110, rtcMon = 2, rtcMday = 20, rtcHour, rtcMin, rtcSec;
+volatile BYTE rtcYear = 117, rtcMon = 5, rtcMday = 10, rtcHour, rtcMin, rtcSec;
 
 
 
@@ -84,7 +84,7 @@ __interrupt void ISR_tmm0 (void)
 /* This is a real time clock service to be called back     */
 /* from FatFs module.                                      */
 
-#if !_FS_NORTC && !_FS_READONLY
+#if !FF_FS_NORTC && !FF_FS_READONLY
 DWORD get_fattime (void)
 {
 	DWORD tmr;
@@ -245,7 +245,7 @@ int main (void)
 {
 	char *ptr, *ptr2;
 	long p1, p2, p3;
-	BYTE res, b, drv = 0;
+	BYTE res, b, pdrv = 0;
 	UINT s1, s2, cnt, blen = sizeof Buff;
 	static const BYTE ft[] = {0, 12, 16, 32};
 	DWORD ofs = 0, sect = 0, blk[2];
@@ -258,8 +258,7 @@ int main (void)
 	xdev_in(uart0_get);
 	xdev_out(uart0_put);
 	xputs("\nFatFs test monitor for V850ES\n");
-	xputs(_USE_LFN ? "LFN Enabled" : "LFN Disabled");
-	xprintf(", Code page: %u\n", _CODE_PAGE);
+	xprintf("LFN=%s, CP=%u\n", FF_USE_LFN ? "Enabled" : "Disabled", FF_CODE_PAGE);
 
 	for (;;) {
 		xputc('>');
@@ -336,14 +335,14 @@ int main (void)
 			switch (*ptr++) {
 			case 'd' :	/* dd [<pd#> <sect>] - Dump secrtor */
 				if (!xatoi(&ptr, &p1)) {
-					p1 = drv; p2 = sect;
+					p1 = pdrv; p2 = sect;
 				} else {
 					if (!xatoi(&ptr, &p2)) break;
 				}
-				drv = (BYTE)p1; sect = p2;
-				res = disk_read(drv, Buff, sect, 1);
+				pdrv = (BYTE)p1; sect = p2;
+				res = disk_read(pdrv, Buff, sect, 1);
 				if (res) { xprintf("rc=%d\n", (WORD)res); break; }
-				xprintf("PD#:%u LBA:%lu\n", drv, sect++);
+				xprintf("PD#:%u LBA:%lu\n", pdrv, sect++);
 				for (ptr=(char*)Buff, ofs = 0; ofs < 0x200; ptr += 16, ofs += 16)
 					put_dump((BYTE*)ptr, ofs, 16, DW_CHAR);
 				break;
@@ -457,7 +456,7 @@ int main (void)
 						ft[fs->fs_type & 3], (DWORD)fs->csize * 512, fs->n_fats,
 						fs->n_rootdir, fs->fsize, (DWORD)fs->n_fatent - 2,
 						fs->volbase, fs->fatbase, fs->dirbase, fs->database);
-#if _USE_LABEL
+#if FF_USE_LABEL
 				res = f_getlabel(ptr, (char*)Buff, (DWORD*)&p2);
 				if (res) { put_rc(res); break; }
 				xprintf(Buff[0] ? "Volume name is %s\n" : "No volume label\n", (char*)Buff);
@@ -596,7 +595,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-#if _USE_CHMOD
+#if FF_USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change attribute of an object */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -646,12 +645,12 @@ int main (void)
 				f_close(&File[0]);
 				f_close(&File[1]);
 				break;
-#if _FS_RPATH
+#if FF_FS_RPATH
 			case 'g' :	/* fg <path> - Change current directory */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdir(ptr));
 				break;
-#if _FS_RPATH >= 2
+#if FF_FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				res = f_getcwd(Line, sizeof Line);
 				if (res)
@@ -661,13 +660,13 @@ int main (void)
 				break;
 #endif
 #endif
-#if _USE_LABEL
+#if FF_USE_LABEL
 			case 'b' :	/* fb <name> - Set volume label */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_setlabel(ptr));
 				break;
-#endif	/* _USE_LABEL */
-#if _USE_MKFS
+#endif	/* FF_USE_LABEL */
+#if FF_USE_MKFS
 			case 'm' :	/* fm <ld#> <rule> <csize> - Create file system */
 				if (!xatoi(&ptr, &p1) || (UINT)p1 > 9 || !xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				xprintf("The volume will be formatted. Are you sure? (Y/n)=");
@@ -677,7 +676,7 @@ int main (void)
 					put_rc(f_mkfs(Line, (BYTE)p2, (DWORD)p3, Buff, sizeof Buff));
 				}
 				break;
-#endif	/* _USE_MKFS */
+#endif	/* FF_USE_MKFS */
 			case 'z' :	/* fz [<size>] - Change/Show R/W length for fr/fw/fx command */
 				if (xatoi(&ptr, &p1) && p1 >= 1 && p1 <= (long)sizeof Buff)
 					blen = p1;

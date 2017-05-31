@@ -117,11 +117,11 @@
 [PROJECT_FILES]
 "C:\user\Prj_Renesas\ff_rx220\ff_rx220\dbsct.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx220\ff_rx220\ff.c" "User" "C source file" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\ffunicode.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx220\ff_rx220\intprg.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx220\ff_rx220\main.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx220\ff_rx220\mmc_rspi.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx220\ff_rx220\option.c" "User" "C source file" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\option\unicode.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx220\ff_rx220\resetprg.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx220\ff_rx220\sound.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx220\ff_rx220\uart_sci.c" "User" "C source file" 2 
@@ -138,29 +138,29 @@
 "DefaultSession" "C:\user\Prj_Renesas\ff_rx220\ff_rx220\DefaultSession.hsf" 0 
 [GENERAL_DATA_SESSION_DefaultSession]
 [OPTIONS_Release_Renesas OptLinker]
-"Single Shot" "07bd7424c5d62d10" 5 
+"Single Shot" "09183f1e3bcc2d10" 5 
 [OPTIONS_Release_Renesas RX Assembler]
 "Assembly source file" "0c76bcbaa7f32d10" 4 
 "Linkage symbol file" "0c76bcbaa7f32d10" 4 
 [OPTIONS_Release_Renesas RX C/C++ Compiler]
-"C source file" "025258adf9e62d10" 2 
-"C++ source file" "025258adf9e62d10" 3 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\dbsct.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\ff.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\intprg.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\main.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\mmc_rspi.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\option.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\option\unicode.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\resetprg.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\sound.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\uart_sci.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\vecttbl.c" "025258adf9e62d10" 2 
-"C:\user\Prj_Renesas\ff_rx220\ff_rx220\xprintf.c" "025258adf9e62d10" 2 
+"C source file" "0fd4bed04bcc2d10" 2 
+"C++ source file" "0fd4bed04bcc2d10" 3 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\dbsct.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\ff.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\ffunicode.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\intprg.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\main.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\mmc_rspi.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\option.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\resetprg.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\sound.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\uart_sci.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\vecttbl.c" "0fd4bed04bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx220\ff_rx220\xprintf.c" "0fd4bed04bcc2d10" 2 
 [OPTIONS_Release_Renesas RX C/C++ Library Generator]
 "Single Shot" "0c76bcbaa7f32d10" 1 
 [OPTIONS_Release_Renesas RX Configurator]
-"Single Shot" "07a65424c5d62d10" 6 
+"Single Shot" "09183f1e3bcc2d10" 6 
 [OPTIONS_Release]
 "" 0 
 "[V|VERSION|1] [B|COMMAND|1] [S|SPEC|UITRON4] [S|OUTPUTPATH|^"$(CONFIGDIR)^"] [S|CPU|RX200] [S|ENDIAN|LITTLE] [S|FINT_REGISTER|0]" 6 

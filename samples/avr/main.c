@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------*/
-/* FAT file system sample project for FatFs            (C)ChaN, 2014    */
+/* FatFs sample project for Atmel AVR                (C)ChaN, 2017      */
 /*----------------------------------------------------------------------*/
 
 
@@ -15,18 +15,16 @@
 
 
 
-FUSES = {0xF7, 0x91, 0xFC};		/* ATmega1284p fuses: Low, High, Extended.
-This is the fuse settings for this project. The fuse bits will be included
+FUSES = {0xF7, 0x91, 0xFC};		/* ATmega1284p fuses: Low, High, Extended. */
+/* This is the fuse settings for this project. The fuse bits will be included
 in the output hex file with program code. However some old flash programmers
 cannot load the fuse bits from hex file. If it is the case, remove this line
 and use these values to program the fuse bits. */
 
 
-
-
 BYTE Buff[4096];	/* Working buffer */
 
-FATFS FatFs[2];		/* File system object for each logical drive */
+FATFS FatFs[2];		/* Filesystem object for each logical drive */
 FIL File[2];		/* File object */
 DIR Dir;			/* Directory object */
 FILINFO Finfo;
@@ -38,13 +36,14 @@ volatile UINT Timer;	/* Performance timer (100Hz increment) */
 
 
 
-/*---------------------------------------------------------*/
-/* User Provided Timer Function for FatFs module           */
-/*---------------------------------------------------------*/
-/* This is a real time clock service to be called from     */
-/* FatFs module. Any valid time must be returned even if   */
-/* the system does not support a real time clock.          */
-/* This is not required in read-only configuration.        */
+/*--------------------------------------------------------------------*/
+/* User Provided Timer Function for FatFs module                      */
+/*--------------------------------------------------------------------*/
+/* This is a real time clock service to be called from FatFs module.  */
+/* Any valid time must be returned even if the system does not        */
+/* support a real time clock. This is not required when FatFs is      */
+/* configured for FF_FS_READONLY or FF_FS_NORTC = 1.                  */
+/*--------------------------------------------------------------------*/
 
 
 DWORD get_fattime (void)
@@ -218,8 +217,7 @@ int main (void)
 	uart_init(115200);		/* Initialize UART driver */
 	xdev_out(uart_putc);	/* Register uart_putc() to xitoa module as console output */
 	xputs(PSTR("\nFatFs Module Test Monitor\n"));
-	xputs(_USE_LFN ? PSTR("LFN Enabled") : PSTR("LFN Disabled"));
-	xprintf(PSTR(", Code page: %u\n"), _CODE_PAGE);
+	xprintf(PSTR("LFN=%S, CP=%u\n"), FF_USE_LFN ? PSTR("Enabled") : PSTR("Disabled"), FF_CODE_PAGE);
 #ifdef DRV_CFC
 	xprintf(PSTR("CFC ==> %u\n"), DRV_CFC);
 #endif
@@ -382,7 +380,7 @@ int main (void)
 						fs->n_rootdir, fs->fsize, fs->n_fatent - 2,
 						fs->fatbase, fs->dirbase, fs->database
 				);
-#if _USE_LABEL
+#if FF_USE_LABEL
 				fr = f_getlabel(ptr2, (char*)Buff, (DWORD*)&p1);
 				if (fr) {
 					put_rc(fr); break;
@@ -534,14 +532,14 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-#if _USE_EXPAND
+#if FF_USE_EXPAND
 			case 'h':	/* fh <fsz> <opt> - Allocate contiguous block */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				fr = f_expand(&File[0], (DWORD)p1, (BYTE)p2);
 				put_rc(fr);
 				break;
 #endif
-#if _USE_CHMOD
+#if FF_USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change file/dir attribute */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -591,18 +589,18 @@ int main (void)
 				f_close(&File[0]);
 				f_close(&File[1]);
 				break;
-#if _FS_RPATH
+#if FF_FS_RPATH
 			case 'g' :	/* fg <path> - Change current directory */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdir(ptr));
 				break;
-#if _VOLUMES >= 2
+#if FF_VOLUMES >= 2
 			case 'j' :	/* fj <path> - Change current drive */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdrive(ptr));
 				break;
 #endif
-#if _FS_RPATH >= 2
+#if FF_FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				fr = f_getcwd(line, sizeof line);
 				if (fr) {
@@ -613,14 +611,14 @@ int main (void)
 				break;
 #endif
 #endif
-#if _USE_LABEL
+#if FF_USE_LABEL
 			case 'b' :	/* fb <name> - Set volume label */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_setlabel(ptr));
 				break;
 #endif
-#if _USE_MKFS
-			case 'm' :	/* fm <ld#> <type> <bytes/clust> - Create file system */
+#if FF_USE_MKFS
+			case 'm' :	/* fm <ld#> <type> <bytes/clust> - Create filesystem */
 				if (!xatoi(&ptr, &p1) || (UINT)p1 > 9 || !xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				xprintf(PSTR("The drive %u will be formatted. Are you sure? (Y/n)="), (WORD)p1);
 				get_line(line, sizeof line);
@@ -674,7 +672,7 @@ int main (void)
 			" bw <pd#> <sect> [<num>] - Write working buffer into disk\n"
 			" bf <val> - Fill working buffer\n"
 			" bl <len> - Set read/write length for fr/fw command\n"
-			"[File system controls]\n"
+			"[Filesystem controls]\n"
 			" fi <ld#> [<mount>] - Force initialized the volume\n"
 			" fs [<path>] - Show volume status\n"
 			" fl [<path>] - Show a directory\n"
@@ -695,7 +693,7 @@ int main (void)
 			" fg <path> - Change current directory\n"
 			" fj <path> - Change current drive\n"
 			" fq - Show current directory\n"
-			" fm <ld#> <rule> <cluster size> - Create file system\n"
+			" fm <ld#> <type> <au> - Create FAT volume\n"
 			"[Misc commands]\n"
 			" p <wavfile> - Play RIFF-WAVE file\n"
 			" t [<year> <month> <mday> <hour> <min> <sec>] - Set/Show current time\n"

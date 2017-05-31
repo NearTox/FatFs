@@ -27,12 +27,12 @@
 /* Work Area                                               */
 /*---------------------------------------------------------*/
 
-FATFS FatFs[_VOLUMES];	/* File system object */
-FIL File[2];			/* File objects */
-DIR Dir;				/* Directory object */
-FILINFO Fno;			/* File properties (fs/fl command) */
+FATFS FatFs[FF_VOLUMES];	/* File system object */
+FIL File[2];				/* File objects */
+DIR Dir;					/* Directory object */
+FILINFO Fno;				/* File properties (fs/fl command) */
 
-DWORD AccSize;			/* File counter (fs command) */
+DWORD AccSize;				/* File counter (fs command) */
 WORD AccFiles, AccDirs;
 
 char Line[256];				/* Console input buffer */
@@ -98,7 +98,7 @@ void ioinit (void)
 /* User provided RTC function for FatFs module             */
 /*---------------------------------------------------------*/
 
-#if !_FS_NORTC
+#if !FF_FS_NORTC
 DWORD get_fattime (void)
 {
 	RTC_t rtc;
@@ -246,8 +246,7 @@ int main (void)
 	xputs("\nFatFs module test monitor for FRK-RN62N evaluation board\n");
 	xputs("\nInitializing RTC...");
 	xputs(rtc_initialize() ? "ok.\n" : "failed.\n");
-	xputs(_USE_LFN ? "LFN Enabled" : "LFN Disabled");
-	xprintf(", Code page: %u/ANSI\n", _CODE_PAGE);
+	xprintf("LFN=%s, CP=%u\n", FF_USE_LFN ? "Enabled" : "Disabled", FF_CODE_PAGE);
 
 
 	for (;;) {
@@ -434,7 +433,7 @@ int main (void)
 						ft[fs->fs_type], (DWORD)fs->csize * 512, fs->n_fats,
 						fs->n_rootdir, fs->fsize, (DWORD)fs->n_fatent - 2,
 						fs->volbase, fs->fatbase, fs->dirbase, fs->database);
-#if _USE_LABEL
+#if FF_USE_LABEL
 				res = f_getlabel(ptr, (char*)Buff, (DWORD*)&p2);
 				if (res) { put_rc(res); break; }
 				xprintf(Buff[0] ? "Volume name is %s\n" : "No volume label\n", (char*)Buff);
@@ -481,7 +480,7 @@ int main (void)
 				else
 					put_rc(res);
 				break;
-#if _USE_FIND
+#if FF_USE_FIND
 			case 'L' :	/* fL <path> <pattern> - Directory search */
 				while (*ptr == ' ') ptr++;
 				ptr2 = ptr;
@@ -489,7 +488,7 @@ int main (void)
 				*ptr++ = 0;
 				res = f_findfirst(&Dir, &Fno, ptr2, ptr);
 				while (res == FR_OK && Fno.fname[0]) {
-#if _USE_LFN && _USE_FIND == 2
+#if FF_USE_LFN && FF_USE_FIND == 2
 					xprintf("%-12s  %s\n", Fno.altname, Fno.fname);
 #else
 					xprintf("%s\n", Fno.fname);
@@ -591,7 +590,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-#if _USE_CHMOD
+#if FF_USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change attribute of an object */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -641,12 +640,12 @@ int main (void)
 				f_close(&File[0]);
 				f_close(&File[1]);
 				break;
-#if _FS_RPATH
+#if FF_FS_RPATH
 			case 'g' :	/* fg <path> - Change current directory */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdir(ptr));
 				break;
-#if _FS_RPATH >= 2
+#if FF_FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				res = f_getcwd(Line, sizeof Line);
 				if (res)
@@ -656,13 +655,13 @@ int main (void)
 				break;
 #endif
 #endif
-#if _USE_LABEL
+#if FF_USE_LABEL
 			case 'b' :	/* fb <name> - Set volume label */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_setlabel(ptr));
 				break;
-#endif	/* _USE_LABEL */
-#if _USE_MKFS
+#endif	/* FF_USE_LABEL */
+#if FF_USE_MKFS
 			case 'm' :	/* fm <ld#> <rule> <csize> - Create file system */
 				if (!xatoi(&ptr, &p1) || (UINT)p1 > 9 || !xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				xprintf("The volume will be formatted. Are you sure? (Y/n)=");
@@ -672,7 +671,7 @@ int main (void)
 					put_rc(f_mkfs(Line, (BYTE)p2, (DWORD)p3, Buff, sizeof Buff));
 				}
 				break;
-#endif	/* _USE_MKFS */
+#endif	/* FF_USE_MKFS */
 			case 'z' :	/* fz [<size>] - Change/Show R/W length for fr/fw/fx command */
 				if (xatoi(&ptr, &p1) && p1 >= 1 && p1 <= (long)sizeof Buff)
 					blen = p1;

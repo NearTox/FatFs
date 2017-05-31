@@ -2,9 +2,9 @@
 PROJECT	= avr_mmcbb
 
 ### Source files and search directory
-CSRC    = main.c uart.c ff.c mmc_bb.c rtc_ds1338.c sound.c unicode_avr.c
+CSRC    = main.c uart.c ff.c mmc_bb.c rtc_ds1338.c sound.c ffunicode_avr.c
 ASRC    = xitoa.S
-VPATH   = options
+VPATH   =
 
 ### Target device
 DEVICE  = atmega64

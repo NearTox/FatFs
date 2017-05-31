@@ -177,7 +177,7 @@ void rfsh_base (		/* Draw title line */
 {
 	int i;
 
-#if _VOLUMES < 2
+#if FF_VOLUMES < 2
 	if (*path) path += 2;
 #endif
 	disp_font_color(C_TITLE);
@@ -218,8 +218,8 @@ int selection (
 
 static
 FRESULT load_dir (
-	char *path,			/* Pointer to the current path name buffer */
-	ITEM *diritems,	/* Pointer to directory item table */
+	char path[],		/* Pointer to the current path name buffer */
+	ITEM diritems[],	/* Pointer to directory item table */
 	int *items
 )
 {
@@ -236,14 +236,14 @@ FRESULT load_dir (
 			do {
 				res = f_readdir(&dir, &fno);
 				if (res || !fno.fname[0]) break;
-				diritems->fsize = fno.fsize;
-				diritems->fdate = fno.fdate;
-				diritems->ftime = fno.ftime;
-				diritems->fattrib = fno.fattrib;
-#if _USE_LFN
-				strcpy(diritems->fname, fno.altname[0] ? fno.altname : fno.fname);
+				diritems[i].fsize = fno.fsize;
+				diritems[i].fdate = fno.fdate;
+				diritems[i].ftime = fno.ftime;
+				diritems[i].fattrib = fno.fattrib;
+#if FF_USE_LFN
+				strcpy(diritems[i].fname, fno.altname[0] ? fno.altname : fno.fname);
 #else
-				strcpy(diritems->fname, fno.fname);
+				strcpy(diritems[i].fname, fno.fname);
 #endif
 				i++;
 			} while (i < N_MAXDIR);

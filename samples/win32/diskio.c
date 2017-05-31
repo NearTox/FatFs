@@ -83,7 +83,7 @@ int get_status (
 
 	if (pdrv == 0) {	/* RAMDISK */
 		stat->sz_sector = SS_RAMDISK;
-		if (stat->sz_sector < _MIN_SS || stat->sz_sector > _MAX_SS) return 0;
+		if (stat->sz_sector < FF_MIN_SS || stat->sz_sector > FF_MAX_SS) return 0;
 		stat->n_sectors = (DWORD)((QWORD)SZ_RAMDISK * 0x100000 / SS_RAMDISK);
 		stat->status = 0;
 		return 1;
@@ -100,7 +100,7 @@ int get_status (
 		stat->n_sectors = parms.SectorsPerTrack * parms.TracksPerCylinder * (DWORD)parms.Cylinders.QuadPart;
 		stat->sz_sector = (WORD)parms.BytesPerSector;
 	}
-	if (stat->sz_sector < _MIN_SS || stat->sz_sector > _MAX_SS) return 0;
+	if (stat->sz_sector < FF_MIN_SS || stat->sz_sector > FF_MAX_SS) return 0;
 
 	/* Get write protect status */
 	stat->status = DeviceIoControl(h, IOCTL_DISK_IS_WRITABLE, 0, 0, 0, 0, &dw, 0) ? 0 : STA_PROTECT;

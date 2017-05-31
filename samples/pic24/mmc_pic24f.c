@@ -1,5 +1,5 @@
 /*------------------------------------------------------------------------/
-/  MMCv3/SDv1/SDv2 (in SPI mode) control module
+/  MMCv3/SDv1/SDv2+ (in SPI mode) control module
 /-------------------------------------------------------------------------/
 /
 /  Copyright (C) 2014, ChaN, all right reserved.
@@ -96,8 +96,7 @@ void power_off (void)
 /* SPI Transactions (Platform dependent)                                 */
 /*-----------------------------------------------------------------------*/
 
-/* Single byte SPI transfer */
-
+/* Single byte SPI transaction */
 static
 BYTE xchg_spi (BYTE dat)
 {
@@ -107,8 +106,7 @@ BYTE xchg_spi (BYTE dat)
 }
 
 
-/* Block SPI transfers */
-
+/* Multi-byte SPI transaction (transmit) */
 static
 void xmit_spi_multi (
 	const BYTE* buff,	/* Data to be sent */
@@ -126,6 +124,7 @@ void xmit_spi_multi (
 }
 
 
+/* Multi-byte SPI transaction (receive) */
 static
 void rcvr_spi_multi (
 	BYTE* buff,		/* Buffer to store received data */

@@ -29,8 +29,8 @@ BYTE Buff[4096];		/* Working buffer */
 
 volatile UINT Timer;	/* 1kHz increment timer */
 
-volatile WORD rtcYear = 2014;
-volatile BYTE rtcMon = 4, rtcMday = 6, rtcHour, rtcMin, rtcSec;
+volatile WORD rtcYear = 2017;
+volatile BYTE rtcMon = 5, rtcMday = 14, rtcHour, rtcMin, rtcSec;
 
 
 
@@ -220,6 +220,7 @@ int main (void)
 	xdev_in(uart_getc);		/* Join UART and console */
 	xdev_out(uart_putc);
 	xputs("\nFatFs module test monitor for PIC24F\n");
+	xprintf("LFN=%s, CP= %u\n", FF_USE_LFN ? "Enabled" : "Disabled", FF_CODE_PAGE);
 
 	for (;;) {
 		xputc('>');
@@ -372,7 +373,7 @@ int main (void)
 				if (f_getfree(ptr, (DWORD*)&p1, &fs) == FR_OK)
 					xprintf(", %10lu bytes free\n", p1 * fs->csize * 512);
 				break;
-#if _USE_FIND
+#if FF_USE_FIND
 			case 'L' :	/* fL <path> <pattern> - Directory search */
 				while (*ptr == ' ') ptr++;
 				ptr2 = ptr;
@@ -478,7 +479,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-#if _USE_CHMOD
+#if FF_USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change file/dir attribute */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -527,12 +528,12 @@ int main (void)
 				f_close(&File[0]);
 				f_close(&File[1]);
 				break;
-#if _FS_RPATH >= 1
+#if FF_FS_RPATH
 			case 'g' :	/* fg <path> - Change current directory */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdir(ptr));
 				break;
-#if _FS_RPATH >= 2
+#if FF_FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				res = f_getcwd(Line, sizeof Line);
 				if (res)
@@ -542,7 +543,7 @@ int main (void)
 				break;
 #endif
 #endif
-#if _USE_MKFS
+#if FF_USE_MKFS
 			case 'm' :	/* fm <partition rule> <sect/clust> - Create file system */
 				if (!xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				xprintf("The memory card will be formatted. Are you sure? (Y/n)=", p1);
@@ -556,15 +557,15 @@ int main (void)
 
 		case 't' :		/* t [<year> <mon> <mday> <hour> <min> <sec>] */
 			if (xatoi(&ptr, &p1)) {
-				rtcYear = p1-1900;
-				xatoi(&ptr, &p1); rtcMon = p1-1;
+				rtcYear = p1;
+				xatoi(&ptr, &p1); rtcMon = p1;
 				xatoi(&ptr, &p1); rtcMday = p1;
 				xatoi(&ptr, &p1); rtcHour = p1;
 				xatoi(&ptr, &p1); rtcMin = p1;
 				if(!xatoi(&ptr, &p1)) break;
 				rtcSec = p1;
 			}
-			xprintf("%u/%u/%u %02u:%02u:%02u\n", rtcYear+1900, rtcMon+1, rtcMday, rtcHour, rtcMin, rtcSec);
+			xprintf("%u/%u/%u %02u:%02u:%02u\n", rtcYear, rtcMon, rtcMday, rtcHour, rtcMin, rtcSec);
 			break;
 		}
 	}

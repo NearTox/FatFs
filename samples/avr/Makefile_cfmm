@@ -2,9 +2,9 @@
 PROJECT	= avr_cfmm
 
 ### Source files and search directory
-CSRC    = main.c uart.c diskio.c cfc_avr.c mmc_avr_usart.c rtc_ds1338.c ff.c unicode_avr.c sound.c
+CSRC    = main.c uart.c diskio.c cfc_avr.c mmc_avr_usart.c rtc_ds1338.c ff.c ffunicode_avr.c sound.c
 ASRC    = xitoa.S
-VPATH   = options
+VPATH   =
 
 ### Target device
 DEVICE  = atmega1284p

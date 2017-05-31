@@ -224,7 +224,7 @@ int main (void)
 						fs->n_rootdir, fs->fsize, fs->n_fatent - 2,
 						fs->fatbase, fs->dirbase, fs->database
 				);
-#if _USE_LABEL
+#if FF_USE_LABEL
 				res = f_getlabel(ptr, (char*)Buff, (DWORD*)&p1);
 				if (res) { put_rc(res); break; }
 				xprintf("Volume S/N is %04X-%04X\n", (WORD)((DWORD)p1 >> 16), (WORD)(p1 & 0xFFFF));
@@ -358,7 +358,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-#if _USE_CHMOD
+#if FF_USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change file/dir attribute */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -405,12 +405,12 @@ int main (void)
 				f_close(&File[0]);
 				f_close(&File[1]);
 				break;
-#if _FS_RPATH >= 1
+#if FF_FS_RPATH >= 1
 			case 'g' :	/* fg <path> - Change current directory */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdir(ptr));
 				break;
-#if _FS_RPATH >= 2
+#if FF_FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				res = f_getcwd(Line, sizeof Line);
 				if (res)
@@ -420,13 +420,13 @@ int main (void)
 				break;
 #endif
 #endif
-#if _USE_LABEL
+#if FF_USE_LABEL
 			case 'b' :	/* fb <name> - Set volume label */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_setlabel(ptr));
 				break;
 #endif
-#if _USE_MKFS
+#if FF_USE_MKFS
 			case 'm' :	/* fm <type> <bytes/clust> - Create file system */
 				if (!xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				xprintf("The volume will be formatted. Are you sure? (Y/n)=");
@@ -470,7 +470,7 @@ int main (void)
 				" fx <src file> <dst file> - Copy a file\n"
 				" fg <path> - Change current directory\n"
 				" fq - Show current directory\n"
-				" fm <rule> <cluster size> - Create file system\n"
+				" fm <rule> <au> - Create file system\n"
 				"\n"
 			);
 		}

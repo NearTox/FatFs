@@ -55,7 +55,7 @@ void SysTick_Handler (void)
 /* This is a real time clock service to be called back     */
 /* from FatFs module.                                      */
 
-#if !_FS_NORTC && !_FS_READONLY
+#if !FF_FS_NORTC && !FF_FS_READONLY
 DWORD get_fattime (void)
 {
 	RTCTIME rtc;
@@ -198,8 +198,8 @@ int main (void)
 	xdev_out(uart1_putc);
 	xdev_in(uart1_getc);
 	xputs("STM32F100 test monitor\n");
-	xputs(_USE_LFN ? "LFN Enabled" : "LFN Disabled");
-	xprintf(", Code page: %u\n", _CODE_PAGE);
+	xputs(FF_USE_LFN ? "LFN Enabled" : "LFN Disabled");
+	xprintf(", Code page: %u\n", FF_CODE_PAGE);
 
 	/* Initiazlize RTC */
 	if (rtc_initialize()) {
@@ -404,7 +404,7 @@ int main (void)
 						ft[fs->fs_type & 3], (DWORD)fs->csize * 512, fs->n_fats,
 						fs->n_rootdir, fs->fsize, (DWORD)fs->n_fatent - 2,
 						fs->volbase, fs->fatbase, fs->dirbase, fs->database);
-#if _USE_LABEL
+#if FF_USE_LABEL
 				res = f_getlabel(ptr, (char*)Buff, (DWORD*)&p2);
 				if (res) { put_rc(res); break; }
 				xprintf(Buff[0] ? "Volume name is %s\n" : "No volume label\n", (char*)Buff);
@@ -593,12 +593,12 @@ int main (void)
 				f_close(&File[0]);
 				f_close(&File[1]);
 				break;
-#if _FS_RPATH
+#if FF_FS_RPATH
 			case 'g' :	/* fg <path> - Change current directory */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdir(ptr));
 				break;
-#if _FS_RPATH >= 2
+#if FF_FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				res = f_getcwd(Line, sizeof Line);
 				if (res)
@@ -608,13 +608,13 @@ int main (void)
 				break;
 #endif
 #endif
-#if _USE_LABEL
+#if FF_USE_LABEL
 			case 'b' :	/* fb <name> - Set volume label */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_setlabel(ptr));
 				break;
-#endif	/* _USE_LABEL */
-#if _USE_MKFS
+#endif	/* FF_USE_LABEL */
+#if FF_USE_MKFS
 			case 'm' :	/* fm <type> <csize> - Create file system */
 				if (!xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				xprintf("The volume will be formatted. Are you sure? (Y/n)=");
@@ -622,7 +622,7 @@ int main (void)
 				if (Line[0] == 'Y')
 					put_rc(f_mkfs("", (BYTE)p2, (DWORD)p3, Buff, sizeof Buff));
 				break;
-#endif	/* _USE_MKFS */
+#endif	/* FF_USE_MKFS */
 			case 'z' :	/* fz [<size>] - Change/Show R/W length for fr/fw/fx command */
 				if (xatoi(&ptr, &p1) && p1 >= 1 && p1 <= (long)sizeof Buff)
 					blen = p1;

@@ -2,7 +2,7 @@
 /  The Main Development Bench of FatFs Module
 /-------------------------------------------------------------------------/
 /
-/  Copyright (C) 2016, ChaN, all right reserved.
+/  Copyright (C) 2017, ChaN, all right reserved.
 /
 / * This software is a free software and there is NO WARRANTY.
 / * No restriction on use. You can use, modify and redistribute it for
@@ -21,9 +21,9 @@
 int assign_drives (void);	/* Initialization of low level I/O module */
 
 
-#if _MULTI_PARTITION
+#if FF_MULTI_PARTITION
 
-This is just an example of volume - partition resolution table
+This is an example of volume - partition resolution table.
 
 PARTITION VolToPart[] = {
 	{0, 0},	/* "0:" <== PD# 0, auto detect */
@@ -39,12 +39,12 @@ PARTITION VolToPart[] = {
 
 
 #ifdef UNICODE
-#if !_LFN_UNICODE
-#error _LFN_UNICODE must be 1 in this build configuration.
+#if !FF_LFN_UNICODE
+#error FF_LFN_UNICODE must be 1 in this build configuration.
 #endif
 #else
-#if _LFN_UNICODE
-#error _LFN_UNICODE must be 0 in this build configuration.
+#if FF_LFN_UNICODE
+#error FF_LFN_UNICODE must be 0 in this build configuration.
 #endif
 #endif
 
@@ -64,10 +64,10 @@ FILE *AutoExec;
 TCHAR Line[300];			/* Console input/output buffer */
 HANDLE hCon, hKey;
 
-FATFS FatFs[_VOLUMES];		/* File system object for logical drive */
+FATFS FatFs[FF_VOLUMES];		/* Filesystem object for logical drive */
 BYTE Buff[262144];			/* Working buffer */
 
-#if _USE_FASTSEEK
+#if FF_USE_FASTSEEK
 DWORD SeekTbl[16];			/* Link map table for fast seek feature */
 #endif
 
@@ -76,7 +76,7 @@ DWORD SeekTbl[16];			/* Link map table for fast seek feature */
 /* User Provided RTC Function for FatFs module                       */
 /*-------------------------------------------------------------------*/
 /* This is a real time clock service to be called from FatFs module. */
-/* This function is needed when _FS_READONLY == 0 and _FS_NORTC == 0 */
+/* This function is needed when FF_FS_READONLY == 0 and FF_FS_NORTC == 0 */
 
 DWORD get_fattime (void)
 {
@@ -286,7 +286,7 @@ const TCHAR HelpStr[] = {
 		_T(" br <pd#> <sect> <count> - Read disk into working buffer\n")
 		_T(" bw <pd#> <sect> <count> - Write working buffer into disk\n")
 		_T(" bf <val> - Fill working buffer\n")
-		_T("[File system contorls]\n")
+		_T("[Filesystem contorls]\n")
 		_T(" fi <ld#> [<opt>] - Force initialized the volume\n")
 		_T(" fs [<path>] - Show volume status\n")
 		_T(" fl [<path>] - Show a directory\n")
@@ -311,8 +311,9 @@ const TCHAR HelpStr[] = {
 		_T(" fj <path> - Change current drive\n")
 		_T(" fq - Show current directory path\n")
 		_T(" fb <name> - Set volume label\n")
-		_T(" fm <ld#> <type> <cluster size> - Create file system\n")
+		_T(" fm <ld#> <type> <au> - Create FAT volume\n")
 		_T(" fp <pd#> <p1 size> <p2 size> <p3 size> <p4 size> - Divide physical drive\n")
+		_T(" p <cp#> - Set code page\n")
 		_T("\n")
 	};
 
@@ -416,28 +417,32 @@ int _tmain (int argc, TCHAR *argv[])
 	hCon = GetStdHandle(STD_OUTPUT_HANDLE);
 	set_console_size(hCon, 100, 35, 500);
 
-	if (GetConsoleCP() != _CODE_PAGE) {
-		if (!SetConsoleCP(_CODE_PAGE) || !SetConsoleOutputCP(_CODE_PAGE)) {
+#if FF_CODE_PAGE != 0
+	if (GetConsoleCP() != FF_CODE_PAGE) {
+		if (!SetConsoleCP(FF_CODE_PAGE) || !SetConsoleOutputCP(FF_CODE_PAGE)) {
 			_tprintf(_T("Error: Failed to change the console code page.\n"));
 		}
 	}
-	_stprintf(pool, _T(".%u"), _CODE_PAGE);
-	_tsetlocale(LC_CTYPE, pool);
+#else
+	w = GetConsoleCP();
+	_tprintf(_T("f_setcp(%u)\n"), w);
+	put_rc(f_setcp(w));
+#endif
 
 	_tprintf(_T("FatFs module test monitor (%s, CP:%u/%s)\n\n"),
-			_USE_LFN ? _T("LFN") : _T("SFN"),
-			_CODE_PAGE,
-			_LFN_UNICODE ? _T("Unicode") : _T("ANSI"));
+			FF_USE_LFN ? _T("LFN") : _T("SFN"),
+			FF_CODE_PAGE,
+			FF_LFN_UNICODE ? _T("Unicode") : _T("ANSI"));
 
 	_stprintf(pool, _T("FatFs debug console (%s, CP:%u/%s)"),
-			_USE_LFN ? _T("LFN") : _T("SFN"),
-			_CODE_PAGE,
-			_LFN_UNICODE ? _T("Unicode") : _T("ANSI"));
+			FF_USE_LFN ? _T("LFN") : _T("SFN"),
+			FF_CODE_PAGE,
+			FF_LFN_UNICODE ? _T("Unicode") : _T("ANSI"));
 	SetConsoleTitle(pool);
 
 	assign_drives();	/* Find physical drives on the PC */
 
-#if _MULTI_PARTITION
+#if FF_MULTI_PARTITION
 	_tprintf(_T("\nMultiple partition is enabled. Each logical drive is tied to the patition as follows:\n"));
 	for (cnt = 0; cnt < sizeof VolToPart / sizeof (PARTITION); cnt++) {
 		const TCHAR *pn[] = {_T("auto detect"), _T("1st partition"), _T("2nd partition"), _T("3rd partition"), _T("4th partition")};
@@ -584,7 +589,7 @@ int _tmain (int argc, TCHAR *argv[])
 			case 's' :	/* fs [<path>] - Show logical drive status */
 				while (*ptr == ' ') ptr++;
 				ptr2 = ptr;
-#if _FS_READONLY
+#if FF_FS_READONLY
 				fr = f_opendir(&dir, ptr);
 				if (fr == FR_OK) {
 					fs = dir.obj.fs;
@@ -596,15 +601,15 @@ int _tmain (int argc, TCHAR *argv[])
 				if (fr) { put_rc(fr); break; }
 				_tprintf(_T("FAT type = %s\n"), ft[fs->fs_type]);
 				_tprintf(_T("Cluster size = %lu bytes\n"),
-#if _MAX_SS != _MIN_SS
+#if FF_MAX_SS != FF_MIN_SS
 					(DWORD)fs->csize * fs->ssize);
 #else
-					(DWORD)fs->csize * _MAX_SS);
+					(DWORD)fs->csize * FF_MAX_SS);
 #endif
 				if (fs->fs_type < FS_FAT32) _tprintf(_T("Root DIR entries = %u\n"), fs->n_rootdir);
 				_tprintf(_T("Sectors/FAT = %lu\nNumber of FATs = %u\nNumber of clusters = %lu\nVolume start sector = %lu\nFAT start sector = %lu\nRoot DIR start %s = %lu\nData start sector = %lu\n\n"),
 					fs->fsize, fs->n_fats, fs->n_fatent - 2, fs->volbase, fs->fatbase, fs->fs_type >= FS_FAT32 ? _T("cluster") : _T("sector"), fs->dirbase, fs->database);
-#if _USE_LABEL
+#if FF_USE_LABEL
 				fr = f_getlabel(ptr2, pool, &dw);
 				if (fr) { put_rc(fr); break; }
 				if (pool[0]) {
@@ -622,7 +627,7 @@ int _tmain (int argc, TCHAR *argv[])
 				if (fr) { put_rc(fr); break; }
 				p2 = (fs->n_fatent - 2) * fs->csize;
 				p3 = p1 * fs->csize;
-#if _MAX_SS != _MIN_SS
+#if FF_MAX_SS != FF_MIN_SS
 				p2 *= fs->ssize / 512;
 				p3 *= fs->ssize / 512;
 #endif
@@ -630,7 +635,7 @@ int _tmain (int argc, TCHAR *argv[])
 				p3 /= 2;
 				_tprintf(_T("\r%u files, %I64u bytes.\n%u folders.\n%lu KiB total disk space.\n"),
 						AccFiles, AccSize, AccDirs, p2);
-#if !_FS_READONLY
+#if !FF_FS_READONLY
 				_tprintf(_T("%lu KiB available.\n"), p3);
 #endif
 				break;
@@ -656,7 +661,7 @@ int _tmain (int argc, TCHAR *argv[])
 							(Finfo.fattrib & AM_ARC) ? 'A' : '-',
 							(Finfo.fdate >> 9) + 1980, (Finfo.fdate >> 5) & 15, Finfo.fdate & 31,
 							(Finfo.ftime >> 11), (Finfo.ftime >> 5) & 63, (QWORD)Finfo.fsize);
-#if _USE_LFN && _USE_FIND == 2
+#if FF_USE_LFN && FF_USE_FIND == 2
 					_tprintf(_T("%-12s  "),Finfo.altname);
 #endif
 					put_uni(Finfo.fname);
@@ -664,14 +669,14 @@ int _tmain (int argc, TCHAR *argv[])
 				}
 				f_closedir(&dir);
 				_tprintf(_T("%4u File(s),%11I64u bytes total\n%4u Dir(s)"), s1, AccSize, s2);
-#if !_FS_READONLY
+#if !FF_FS_READONLY
 				if (f_getfree(ptr, (DWORD*)&p1, &fs) == FR_OK) {
 					_tprintf(_T(",%12I64u bytes free"), (QWORD)p1 * fs->csize * 512);
 				}
 #endif
 				_tprintf(_T("\n"));
 				break;
-#if _USE_FIND
+#if FF_USE_FIND
 			case 'L' :	/* fL <path> <pattern> - Directory search */
 				while (*ptr == ' ') ptr++;
 				ptr2 = ptr;
@@ -679,7 +684,7 @@ int _tmain (int argc, TCHAR *argv[])
 				*ptr++ = 0;
 				fr = f_findfirst(&dir, &Finfo, ptr2, ptr);
 				while (fr == FR_OK && Finfo.fname[0]) {
-#if _USE_LFN && _USE_FIND == 2
+#if FF_USE_LFN && FF_USE_FIND == 2
 					_tprintf(_T("%-12s  "), Finfo.altname);
 #endif
 					put_uni(Finfo.fname);
@@ -694,12 +699,12 @@ int _tmain (int argc, TCHAR *argv[])
 			case 'o' :	/* fo <mode> <file> - Open a file */
 				if (!xatoi(&ptr, &p1)) break;
 				while (*ptr == ' ') ptr++;
-				fr = f_open(file, ptr, (BYTE)p1);
+				fr = f_open(&file[0], ptr, (BYTE)p1);
 				put_rc(fr);
 				break;
 
 			case 'c' :	/* fc - Close a file */
-				put_rc(f_close(file));
+				put_rc(f_close(&file[0]));
 				break;
 
 			case 'r' :	/* fr <len> - read file */
@@ -711,7 +716,7 @@ int _tmain (int argc, TCHAR *argv[])
 					} else {
 						cnt = p1; p1 = 0;
 					}
-					fr = f_read(file, Buff, cnt, &s2);
+					fr = f_read(&file[0], Buff, cnt, &s2);
 					if (fr != FR_OK) { put_rc(fr); break; }
 					p2 += s2;
 					if (cnt != s2) break;
@@ -725,7 +730,7 @@ int _tmain (int argc, TCHAR *argv[])
 				while (p1) {
 					if (p1 >= 16) { cnt = 16; p1 -= 16; }
 					else 		  { cnt = p1; p1 = 0; }
-					fr = f_read(file, Buff, cnt, &cnt);
+					fr = f_read(&file[0], Buff, cnt, &cnt);
 					if (fr != FR_OK) { put_rc(fr); break; }
 					if (!cnt) break;
 					put_dump(Buff, ofs, cnt);
@@ -735,17 +740,17 @@ int _tmain (int argc, TCHAR *argv[])
 
 			case 'e' :	/* fe <ofs> - Seek file pointer */
 				if (!xatoll(&ptr, &px)) break;
-				fr = f_lseek(file, (FSIZE_t)px);
+				fr = f_lseek(&file[0], (FSIZE_t)px);
 				put_rc(fr);
 				if (fr == FR_OK) {
 					_tprintf(_T("fptr = %I64u(0x%I64X)\n"), (QWORD)file[0].fptr, (QWORD)file[0].fptr);
 				}
 				break;
-#if _USE_FASTSEEK
+#if FF_USE_FASTSEEK
 			case 'E' :	/* fE - Enable fast seek and initialize cluster link map table */
 				file[0].cltbl = SeekTbl;			/* Enable fast seek (set address of buffer) */
 				SeekTbl[0] = sizeof SeekTbl / sizeof *SeekTbl;	/* Buffer size */
-				fr = f_lseek(file, CREATE_LINKMAP);	/* Create link map table */
+				fr = f_lseek(&file[0], CREATE_LINKMAP);	/* Create link map table */
 				put_rc(fr);
 				if (fr == FR_OK) {
 					_tprintf((SeekTbl[0] > 4) ? _T("fragmented in %d.\n") : _T("contiguous.\n"), SeekTbl[0] / 2 - 1);
@@ -756,19 +761,19 @@ int _tmain (int argc, TCHAR *argv[])
 					_tprintf(_T("%u items required to create the link map table.\n"), SeekTbl[0]);
 				}
 				break;
-#endif	/* _USE_FASTSEEK */
-#if _FS_RPATH >= 1
+#endif	/* FF_USE_FASTSEEK */
+#if FF_FS_RPATH >= 1
 			case 'g' :	/* fg <path> - Change current directory */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdir(ptr));
 				break;
-#if _VOLUMES >= 2
+#if FF_VOLUMES >= 2
 			case 'j' :	/* fj <path> - Change current drive */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdrive(ptr));
 				break;
 #endif
-#if _FS_RPATH >= 2
+#if FF_FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				fr = f_getcwd(Line, 256);
 				if (fr) {
@@ -780,15 +785,15 @@ int _tmain (int argc, TCHAR *argv[])
 				break;
 #endif
 #endif
-#if _USE_FORWARD
+#if FF_USE_FORWARD
 			case 'f' :	/* ff <len> - Forward data */
 				if (!xatoi(&ptr, &p1)) break;
-				fr = f_forward(file, forward, p1, &s1);
+				fr = f_forward(&file[0], forward, p1, &s1);
 				put_rc(fr);
 				if (fr == FR_OK) _tprintf(_T("\n%u bytes tranferred.\n"), s1);
 				break;
 #endif
-#if !_FS_READONLY
+#if !FF_FS_READONLY
 			case 'w' :	/* fw <len> <val> - Write file */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				memset(Buff, p2, sizeof Buff);
@@ -796,7 +801,7 @@ int _tmain (int argc, TCHAR *argv[])
 				while (p1) {
 					if (p1 >= sizeof Buff) { cnt = sizeof Buff; p1 -= sizeof Buff; }
 					else 				  { cnt = p1; p1 = 0; }
-					fr = f_write(file, Buff, cnt, &s2);
+					fr = f_write(&file[0], Buff, cnt, &s2);
 					if (fr != FR_OK) { put_rc(fr); break; }
 					p2 += s2;
 					if (cnt != s2) break;
@@ -805,7 +810,7 @@ int _tmain (int argc, TCHAR *argv[])
 				break;
 
 			case 'v' :	/* fv - Truncate file */
-				put_rc(f_truncate(file));
+				put_rc(f_truncate(&file[0]));
 				break;
 
 			case 'n' :	/* fn <name> <new_name> - Change file/dir name */
@@ -834,7 +839,7 @@ int _tmain (int argc, TCHAR *argv[])
 				*ptr2++ = 0;
 				while (*ptr2 == ' ') ptr2++;
 				_tprintf(_T("Opening \"%s\""), ptr);
-				fr = f_open(file + 0, ptr, FA_OPEN_EXISTING | FA_READ);
+				fr = f_open(&file[0], ptr, FA_OPEN_EXISTING | FA_READ);
 				_tprintf(_T("\n"));
 				if (fr) {
 					put_rc(fr);
@@ -842,36 +847,36 @@ int _tmain (int argc, TCHAR *argv[])
 				}
 				while (*ptr2 == ' ') ptr2++;
 				_tprintf(_T("Creating \"%s\""), ptr2);
-				fr = f_open(file + 1, ptr2, FA_CREATE_ALWAYS | FA_WRITE);
+				fr = f_open(&file[1], ptr2, FA_CREATE_ALWAYS | FA_WRITE);
 				_tprintf(_T("\n"));
 				if (fr) {
 					put_rc(fr);
-					f_close(file + 0);
+					f_close(&file[0]);
 					break;
 				}
 				_tprintf(_T("Copying..."));
 				p1 = 0;
 				for (;;) {
-					fr = f_read(file + 0, Buff, sizeof Buff, &s1);
+					fr = f_read(&file[0], Buff, sizeof Buff, &s1);
 					if (fr || s1 == 0) break;   /* error or eof */
-					fr = f_write(file + 1, Buff, s1, &s2);
+					fr = f_write(&file[1], Buff, s1, &s2);
 					p1 += s2;
 					if (fr || s2 < s1) break;   /* error or disk full */
 				}
 				_tprintf(_T("\n"));
 				if (fr) put_rc(fr);
-				f_close(file + 0);
-				f_close(file + 1);
+				f_close(&file[0]);
+				f_close(&file[1]);
 				_tprintf(_T("%lu bytes copied.\n"), p1);
 				break;
-#if _USE_EXPAND
+#if FF_USE_EXPAND
 			case 'h':	/* fh <fsz> <opt> - Allocate contiguous block */
 				if (!xatoll(&ptr, &px) || !xatoi(&ptr, &p2)) break;
-				fr = f_expand(file, (FSIZE_t)px, (BYTE)p2);
+				fr = f_expand(&file[0], (FSIZE_t)px, (BYTE)p2);
 				put_rc(fr);
 				break;
 #endif
-#if _USE_CHMOD
+#if FF_USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change file/dir attribute */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -883,18 +888,18 @@ int _tmain (int argc, TCHAR *argv[])
 				Finfo.fdate = (WORD)(((p1 - 1980) << 9) | ((p2 & 15) << 5) | (p3 & 31));
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				Finfo.ftime = (WORD)(((p1 & 31) << 11) | ((p2 & 63) << 5) | ((p3 >> 1) & 31));
-				while (_USE_LFN && *ptr == ' ') ptr++;
+				while (FF_USE_LFN && *ptr == ' ') ptr++;
 				put_rc(f_utime(ptr, &Finfo));
 				break;
 #endif
-#if _USE_LABEL
+#if FF_USE_LABEL
 			case 'b' :	/* fb <name> - Set volume label */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_setlabel(ptr));
 				break;
 #endif
-#if _USE_MKFS
-			case 'm' :	/* fm <ld#> <partition rule> <cluster size> - Create file system */
+#if FF_USE_MKFS
+			case 'm' :	/* fm <ld#> <partition rule> <cluster size> - Create filesystem */
 				if (!xatoi(&ptr, &p1) || (UINT)p1 > 9 || !xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				_tprintf(_T("The volume will be formatted. Are you sure? (Y/n)="));
 				get_uni(ptr, 256);
@@ -902,7 +907,7 @@ int _tmain (int argc, TCHAR *argv[])
 				_stprintf(ptr, _T("%u:"), (UINT)p1);
 				put_rc(f_mkfs(ptr, (BYTE)p2, p3, Buff, sizeof Buff));
 				break;
-#if _MULTI_PARTITION
+#if FF_MULTI_PARTITION
 			case 'p' :	/* fp <pd#> <size1> <size2> <size3> <size4> - Create partition table */
 				{
 					DWORD pts[4];
@@ -918,11 +923,25 @@ int _tmain (int argc, TCHAR *argv[])
 					put_rc(f_fdisk(p1, pts, Buff));
 				}
 				break;
-#endif	/* _MULTI_PARTITION */
-#endif	/* _USE_MKFS */
-#endif	/* !_FS_READONLY */
+#endif	/* FF_MULTI_PARTITION */
+#endif	/* FF_USE_MKFS */
+#endif	/* !FF_FS_READONLY */
 			}
 			break;
+#if FF_CODE_PAGE == 0
+			case 'p' :	/* p <codepage> - Set code page */
+			if (!xatoi(&ptr, &p1)) break;
+			fr = f_setcp((WORD)p1);
+			put_rc(fr);
+			if (fr == FR_OK) {
+				if (SetConsoleCP(p1) && SetConsoleOutputCP(p1)) {
+					_tprintf(_T("Console CP = %u\n"), p1);
+				} else {
+					_tprintf(_T("Failed to change the console CP.\n"));
+				}
+			}
+			break;
+#endif
 
 		}
 	}

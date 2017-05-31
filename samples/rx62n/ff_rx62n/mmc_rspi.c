@@ -1,5 +1,5 @@
 /*------------------------------------------------------------------------*/
-/* FRK-RX62N: MMCv3/SDv1/SDv2 (SPI mode) Control Module                   */
+/* FRK-RX62N: MMCv3/SDv1/SDv2+ (in SPI mode) Control Module               */
 /*------------------------------------------------------------------------*/
 /*
 /  Copyright (C) 2014, ChaN, all right reserved.

@@ -118,10 +118,10 @@
 [PROJECT_FILES]
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\dbsct.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\ff.c" "User" "C source file" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\ffunicode.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\intprg.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\main.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\mmc_rspi.c" "User" "C source file" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\option\unicode.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\resetprg.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\rtc_rx62n.c" "User" "C source file" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\sound.c" "User" "C source file" 2 
@@ -140,7 +140,7 @@
 "DefaultSession" "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\DefaultSession.hsf" 0 
 [GENERAL_DATA_SESSION_DefaultSession]
 [OPTIONS_Debug_Renesas OptLinker]
-"Single Shot" "0df2549776832d10" 5 
+"Single Shot" "04853a12cacc2d10" 5 
 [OPTIONS_Debug_Renesas RX Assembler]
 "Assembly source file" "0897a387c28fdc10" 4 
 "Linkage symbol file" "0897a387c28fdc10" 4 
@@ -149,10 +149,10 @@
 "C++ source file" "0897a387c28fdc10" 3 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\dbsct.c" "0897a387c28fdc10" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\ff.c" "0897a387c28fdc10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\ffunicode.c" "05e01a12cacc2d10" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\intprg.c" "0897a387c28fdc10" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\main.c" "0897a387c28fdc10" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\mmc_rspi.c" "0897a387c28fdc10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\option\unicode.c" "0319f97137240d10" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\resetprg.c" "0897a387c28fdc10" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\rtc_rx62n.c" "0deb249776832d10" 2 
 "C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\sound.c" "0897a387c28fdc10" 2 
@@ -162,7 +162,7 @@
 [OPTIONS_Debug_Renesas RX C/C++ Library Generator]
 "Single Shot" "08ad6c8ee9e62d10" 1 
 [OPTIONS_Debug_Renesas RX Configurator]
-"Single Shot" "0deb249776832d10" 6 
+"Single Shot" "05e01a12cacc2d10" 6 
 [OPTIONS_Debug]
 "" 0 
 "[V|VERSION|1] [B|COMMAND|1] [S|SPEC|UITRON4] [S|OUTPUTPATH|^"$(CONFIGDIR)^"] [S|CPU|RX600] [S|ENDIAN|LITTLE] [S|FINT_REGISTER|0]" 6 
@@ -177,29 +177,29 @@
 [LINKAGE_ORDER_Debug]
 [GENERAL_DATA_CONFIGURATION_Debug]
 [OPTIONS_Release_Renesas OptLinker]
-"Single Shot" "0f347836b9852d10" 5 
+"Single Shot" "04853a12cacc2d10" 5 
 [OPTIONS_Release_Renesas RX Assembler]
 "Assembly source file" "02ead732b9852d10" 4 
 "Linkage symbol file" "02ead732b9852d10" 4 
 [OPTIONS_Release_Renesas RX C/C++ Compiler]
-"C source file" "05d9d9a17ce62d10" 2 
-"C++ source file" "05d9d9a17ce62d10" 3 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\dbsct.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\ff.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\intprg.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\main.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\mmc_rspi.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\option\unicode.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\resetprg.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\rtc_rx62n.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\sound.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\uart_sci.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\vecttbl.c" "05d9d9a17ce62d10" 2 
-"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\xprintf.c" "05d9d9a17ce62d10" 2 
+"C source file" "00deb1fd2bcc2d10" 2 
+"C++ source file" "00deb1fd2bcc2d10" 3 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\dbsct.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\ff.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\ffunicode.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\intprg.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\main.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\mmc_rspi.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\resetprg.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\rtc_rx62n.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\sound.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\uart_sci.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\vecttbl.c" "00deb1fd2bcc2d10" 2 
+"C:\user\Prj_Renesas\ff_rx62n\ff_rx62n\xprintf.c" "00deb1fd2bcc2d10" 2 
 [OPTIONS_Release_Renesas RX C/C++ Library Generator]
 "Single Shot" "048f8858e9e62d10" 1 
 [OPTIONS_Release_Renesas RX Configurator]
-"Single Shot" "0deb249776832d10" 6 
+"Single Shot" "05e01a12cacc2d10" 6 
 [OPTIONS_Release]
 "" 0 
 "[V|VERSION|1] [B|COMMAND|1] [S|SPEC|UITRON4] [S|OUTPUTPATH|^"$(CONFIGDIR)^"] [S|CPU|RX600] [S|ENDIAN|LITTLE] [S|FINT_REGISTER|0]" 6 

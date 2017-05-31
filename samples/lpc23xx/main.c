@@ -21,7 +21,7 @@ FILINFO Finfo;
 
 char Line[256];				/* Console input buffer */
 
-FATFS FatFs[_VOLUMES];		/* File system object for each logical drive */
+FATFS FatFs[FF_VOLUMES];	/* File system object for each logical drive */
 FIL File[2];				/* File objects */
 DIR Dir;					/* Directory object */
 BYTE Buff[32768] __attribute__ ((aligned (4))) ;	/* Working buffer */
@@ -56,7 +56,7 @@ void Isr_TIMER0 (void)
 /* This is a real time clock service to be called back     */
 /* from FatFs module.                                      */
 
-#if !_FS_NORTC && !_FS_READONLY
+#if !FF_FS_NORTC && !FF_FS_READONLY
 DWORD get_fattime ()
 {
 	RTC rtc;
@@ -324,8 +324,8 @@ int main (void)
 	xdev_out(uart0_putc);
 
 	xputs("\nFatFs module test monitor for LPC2300/MCI/NAND\n");
-	xputs(_USE_LFN ? "LFN Enabled" : "LFN Disabled");
-	xprintf(", Code page: %u\n", _CODE_PAGE);
+	xputs(FF_USE_LFN ? "LFN Enabled" : "LFN Disabled");
+	xprintf(", Code page: %u\n", FF_CODE_PAGE);
 	xprintf("MMC/SD -> Drive %u\nNAND-FTL -> Drive %u\n", DN_MCI, DN_NAND);
 
 
@@ -343,6 +343,8 @@ int main (void)
 			switch (*ptr++) {
 			case 'D' :	/* FD - Start filer */
 				disp_init();
+				f_mount(FatFs + 0, "0:", 0);
+				f_mount(FatFs + 1, "1:", 0);
 				filer(File, Buff, sizeof Buff);
 				break;
 			case 'L' :	/* FL <file> - Launch file loader */
@@ -562,7 +564,7 @@ int main (void)
 						fs->n_rootdir, fs->fsize, (DWORD)fs->n_fatent - 2,
 						fs->volbase, fs->fatbase, fs->dirbase, fs->database
 				);
-#if _USE_LABEL
+#if FF_USE_LABEL
 				res = f_getlabel(ptr, (char*)Buff, (DWORD*)&p2);
 				if (res) { put_rc(res); break; }
 				xprintf(Buff[0] ? "Volume name is %s\n" : "No volume label\n", (char*)Buff);
@@ -609,7 +611,7 @@ int main (void)
 				else
 					put_rc(res);
 				break;
-#if _USE_FIND
+#if FF_USE_FIND
 			case 'L' :	/* fL <path> <pattern> - Directory search */
 				while (*ptr == ' ') ptr++;
 				ptr2 = ptr;
@@ -715,13 +717,13 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-
+#if FF_USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change attribute of an object */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chmod(ptr, p1, p2));
 				break;
-
+#endif
 			case 't' :	/* ft <year> <month> <day> <hour> <min> <sec> <name> - Change timestamp of an object */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				Finfo.fdate = ((p1 - 1980) << 9) | ((p2 & 15) << 5) | (p3 & 31);
@@ -765,7 +767,7 @@ int main (void)
 				f_close(&File[0]);
 				f_close(&File[1]);
 				break;
-#if _FS_RPATH
+#if FF_FS_RPATH
 			case 'g' :	/* fg <path> - Change current directory */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdir(ptr));
@@ -775,7 +777,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdrive(ptr));
 				break;
-#if _FS_RPATH >= 2
+#if FF_FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				res = f_getcwd(Line, sizeof Line);
 				if (res)
@@ -783,15 +785,15 @@ int main (void)
 				else
 					xprintf("%s\n", Line);
 				break;
-#endif	/* _FS_RPATH >= 2 */
-#endif	/* _FS_RPATH >= 1 */
-#if _USE_LABEL
+#endif	/* FF_FS_RPATH >= 2 */
+#endif	/* FF_FS_RPATH >= 1 */
+#if FF_USE_LABEL
 			case 'b' :	/* fb <name> - Set volume label */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_setlabel(ptr));
 				break;
-#endif	/* _USE_LABEL */
-#if _USE_MKFS
+#endif	/* FF_USE_LABEL */
+#if FF_USE_MKFS
 			case 'm' :	/* fm <ld#> <type> <cluster size> - Create file system */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				xprintf("The volume will be formatted. Are you sure? (Y/n)=");
@@ -801,7 +803,7 @@ int main (void)
 					put_rc(f_mkfs(Line, (BYTE)p2, (DWORD)p3, Buff, sizeof Buff));
 				}
 				break;
-#endif	/* _USE_MKFS */
+#endif	/* FF_USE_MKFS */
 			case 'z' :	/* fz [<size>] - Change/Show R/W length for fr/fw/fx command */
 				if (xatoi(&ptr, &p1) && p1 >= 1 && (size_t)p1 <= sizeof Buff)
 					blen = p1;

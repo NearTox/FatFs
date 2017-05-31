@@ -1,5 +1,5 @@
 /*------------------------------------------------------------------------*/
-/* RX220: MMCv3/SDv1/SDv2 (SPI mode) Control Module                       */
+/* RX220: MMCv3/SDv1/SDv2+ (in SPI mode) Control Module                   */
 /*------------------------------------------------------------------------*/
 /*
 /  Copyright (C) 2016, ChaN, all right reserved.

@@ -14,7 +14,7 @@
 #define SSP_CH	1	/* SSP channel to use (0:SSP0, 1:SSP1) */
 
 #define	CCLK		100000000UL	/* cclk frequency [Hz] */
-#define PCLK_SSP	50000000UL	/* PCLK frequency for SSP [Hz] */
+#define PCLK_SSP	50000000UL	/* PCLK frequency to be supplied for SSP [Hz] */
 #define SCLK_FAST	25000000UL	/* SCLK frequency under normal operation [Hz] */
 #define	SCLK_SLOW	400000UL	/* SCLK frequency under initialization [Hz] */
 
@@ -64,12 +64,12 @@
 #elif PCLK_SSP * 8 == CCLK
 #define PCLKDIV_SSP	PCLKDIV_8
 #else
-#error Invalid clock frequency.
+#error Invalid CCLK:PCLK_SSP combination.
 #endif
 
 
-#define FCLK_FAST() { SSPxCPSR = (PCLK_SSP / SCLK_FAST) & ~1; }
-#define FCLK_SLOW() { SSPxCPSR = (PCLK_SSP / SCLK_SLOW) & ~1; }
+#define FCLK_FAST() { SSPxCR0 = (SSPxCR0 & 0x00FF) | ((PCLK_SSP / 2 / SCLK_FAST) - 1) << 8; }
+#define FCLK_SLOW() { SSPxCR0 = (SSPxCR0 & 0x00FF) | ((PCLK_SSP / 2 / SCLK_SLOW) - 1) << 8; }
 
 
 
@@ -146,7 +146,7 @@ void rcvr_spi_multi (
 	WORD d;
 
 
-	SSPxCR0 = 0x000F;				/* Select 16-bit mode */
+	SSPxCR0 |= 0x000F;	/* Select 16-bit mode */
 
 	for (n = 0; n < 8; n++)			/* Push 8 frames into pipeline  */
 		SSPxDR = 0xFFFF;
@@ -154,7 +154,7 @@ void rcvr_spi_multi (
 
 	while (btr >= 2) {				/* Receive the data block into buffer */
 		btr -= 2;
-		while (!(SSPxSR & _BV(2))) ;
+		while (!(SSPxSR & _BV(2))) ;	/* Wait for any data in receive FIFO */
 		d = SSPxDR;
 		SSPxDR = 0xFFFF;
 		*buff++ = d >> 8;
@@ -168,7 +168,7 @@ void rcvr_spi_multi (
 		*buff++ = d;
 	}
 
-	SSPxCR0 = 0x0007;				/* Select 8-bit mode */
+	SSPxCR0 &= 0xFFF7;				/* Select 8-bit mode */
 }
 
 
@@ -184,25 +184,29 @@ void xmit_spi_multi (
 	WORD d;
 
 
-	SSPxCR0 = 0x000F;			/* Select 16-bit mode */
+	SSPxCR0 |= 0x000F;			/* Select 16-bit mode */
+
 	for (n = 0; n < 8; n++) {	/* Push 8 frames into pipeline  */
 		d = *buff++;
 		d = d << 8 | *buff++;
 		SSPxDR = d;
 	}
 	btx -= 16;
+
 	while (btx >= 2) {			/* Transmit data block */
 		btx -= 2;
 		d = *buff++;
 		d = d << 8 | *buff++;
-		while (!(SSPxSR & _BV(2))) ;
+		while (!(SSPxSR & _BV(2))) ;	/* Wait for any data in receive FIFO */
 		SSPxDR; SSPxDR = d;
 	}
-	for (n = 0; n < 8; n++) {
+
+	for (n = 0; n < 8; n++) {	/* Flush pipeline */
 		while (!(SSPxSR & _BV(2))) ;
 		SSPxDR;
 	}
-	SSPxCR0 = 0x0007;			/* Select 8-bit mode */
+
+	SSPxCR0 &= 0xFFF7;			/* Select 8-bit mode */
 }
 #endif
 
@@ -272,6 +276,7 @@ void power_on (void)	/* Enable SSP module and attach it to I/O pads */
 {
 	__set_PCONP(PCSSPx, 1);	/* Enable SSP module */
 	__set_PCLKSEL(PCLKSSPx, PCLKDIV_SSP);	/* Select PCLK frequency for SSP */
+	SSPxCPSR = 2;			/* CPSDVSR=2 */
 	SSPxCR0 = 0x0007;		/* Set mode: SPI mode 0, 8-bit */
 	SSPxCR1 = 0x2;			/* Enable SSP with Master */
 	ATTACH_SSP();			/* Attach SSP module to I/O pads */

@@ -1,7 +1,7 @@
 [SdbInfo]
 Ver=5
 [main.c]
-T=58baaded
+T=5917e67c
 1=..\..\..\Program Files\NEC Electronics Tools\CA850\E3.11a\inc850\string.h
 2=uart_v850es.h
 3=xprintf.h
@@ -12,7 +12,7 @@ T=58ad85dd
 1=v850es.h
 2=diskio.h
 [ff.c]
-T=58ba4959
+T=59170f8d
 1=ff.h
 2=diskio.h
 3=..\..\..\Program Files\NEC Electronics Tools\CA850\E3.11a\inc850\stdarg.h
@@ -23,14 +23,9 @@ T=545f0478
 T=5675ff95
 1=xprintf.h
 2=..\..\..\Program Files\NEC Electronics Tools\CA850\E3.11a\inc850\stdarg.h
-[option\unicode.c]
-T=54d6f091
+[ffunicode.c]
+T=5917b708
 1=ff.h
-2=option\cc932.c
-3=option\cc936.c
-4=option\cc949.c
-5=option\cc950.c
-6=option\ccsbcs.c
 [..\..\..\Program Files\NEC Electronics Tools\CA850\E3.11a\inc850\string.h]
 T=3fdd48f4
 1=..\..\..\Program Files\NEC Electronics Tools\CA850\E3.11a\inc850\stddef.h
@@ -50,25 +45,10 @@ T=545f0478
 T=545f0478
 1=integer.h
 [ff.h]
-T=58ba4959
+T=5916c82d
 1=integer.h
 2=ffconf.h
 [ffconf.h]
-T=58baae10
+T=5917e639
 [..\..\..\Program Files\NEC Electronics Tools\CA850\E3.11a\inc850\stdarg.h]
 T=3fdd48f4
-[option\cc932.c]
-T=56c31a6f
-1=ff.h
-[option\cc936.c]
-T=56c31a80
-1=ff.h
-[option\cc949.c]
-T=56c31a8d
-1=ff.h
-[option\cc950.c]
-T=56c31a94
-1=ff.h
-[option\ccsbcs.c]
-T=56c31b29
-1=ff.h
