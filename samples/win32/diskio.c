@@ -2,12 +2,10 @@
 /* Low level disk control module for Win32              (C)ChaN, 2013    */
 /*-----------------------------------------------------------------------*/
 
+#include "diskio.h"		/* Declarations of disk functions */
 #include <windows.h>
-#include <tchar.h>
 #include <winioctl.h>
 #include <stdio.h>
-#include "diskio.h"
-#include "ff.h"
 
 
 #define MAX_DRIVES	10		/* Max number of physical drives to be used */
@@ -125,7 +123,7 @@ int get_status (
 int assign_drives (void)
 {
 	BYTE pdrv, ndrv;
-	TCHAR str[30];
+	WCHAR str[50];
 	HANDLE h;
 	OSVERSIONINFO vinfo = { sizeof (OSVERSIONINFO) };
 
@@ -144,18 +142,19 @@ int assign_drives (void)
 
 	for (pdrv = 0; pdrv < ndrv; pdrv++) {
 		if (pdrv) {	/* \\.\PhysicalDrive1 and later are mapped to disk funtion. */
-			_stprintf(str, _T("\\\\.\\PhysicalDrive%u"), pdrv);
-			h = CreateFile(str, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, 0);
+			swprintf(str, 50, L"\\\\.\\PhysicalDrive%u", pdrv);
+			h = CreateFileW(str, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, 0);
 			if (h == INVALID_HANDLE_VALUE) break;
 			Stat[pdrv].h_drive = h;
 		} else {	/* \\.\PhysicalDrive0 is never mapped to disk function, but RAM disk is mapped instead. */
-			_stprintf(str, _T("RAM Disk"));
+			swprintf(str, 50, L"RAM Disk");
 		}
-		_tprintf(_T("PD#%u <== %s"), pdrv, str);
-		if (get_status(pdrv))
-			_tprintf(_T(" (%uMB, %u bytes * %u sectors)\n"), (UINT)((LONGLONG)Stat[pdrv].sz_sector * Stat[pdrv].n_sectors / 1024 / 1024), Stat[pdrv].sz_sector, Stat[pdrv].n_sectors);
-		else
-			_tprintf(_T(" (Not Ready)\n"));
+		wprintf(L"PD#%u <== %s", pdrv, str);
+		if (get_status(pdrv)) {
+			wprintf(L" (%uMB, %u bytes * %u sectors)\n", (UINT)((LONGLONG)Stat[pdrv].sz_sector * Stat[pdrv].n_sectors / 1024 / 1024), Stat[pdrv].sz_sector, Stat[pdrv].n_sectors);
+		} else {
+			wprintf(L" (Not Ready)\n");
+		}
 	}
 
 	hTmrThread = CreateThread(0, 0, tmr_thread, 0, 0, &TmrThreadID);
@@ -163,11 +162,10 @@ int assign_drives (void)
 
 	if (ndrv > 1) {
 		if (pdrv == 1) {
-			_tprintf(_T("\nYou must run the program as Administrator to access the physical drives.\n"));
+			wprintf(L"\nYou must run the program as Administrator to access the physical drives.\n");
 		}
 	} else {
-		_tprintf(_T("\nOn the Windows Vista and later, you cannot access the physical drives.\n")
-				 _T("Use Windows NT/2k/XP instead.\n"));
+		wprintf(L"\nOn the Windows Vista and later, you cannot access the physical drives.\nUse Windows NT/2k/XP instead.\n");
 	}
 
 	Drives = pdrv;
@@ -291,7 +289,7 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-	DWORD nc, rnc;
+	DWORD nc = 0, rnc;
 	LARGE_INTEGER ofs;
 	DRESULT res;
 
@@ -379,7 +377,7 @@ DRESULT disk_ioctl (
 			DWORD br;
 
 			if (pdrv == 0) {
-				h = CreateFile((TCHAR*)buff, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
+				h = CreateFileW(buff, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
 				if (h != INVALID_HANDLE_VALUE) {
 					if (ReadFile(h, RamDisk, SZ_RAMDISK * 1024 * 1024, &br, 0)) {
 						res = RES_OK;

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------*/
-/* FatFs Module Sample Program / Renesas SH7262        (C)ChaN, 2016    */
+/* FatFs Module Sample Program / Renesas SH7262        (C)ChaN, 2018    */
 /*----------------------------------------------------------------------*/
 /* Ev.Board: FRK-SH2A from CQ Publishing                                */
 /* Console: SCI2 (N81 38400bps)                                         */
@@ -11,11 +11,10 @@
 #include <string.h>
 #include "iodefine.h"
 #include "vect.h"
-#include "integer.h"
 #include "scif.h"
 #include "xprintf.h"
-#include "diskio.h"
 #include "ff.h"
+#include "diskio.h"
 
 #define	F_PCLK	24000000UL
 
@@ -442,12 +441,16 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				res = f_getfree(ptr, (DWORD*)&p1, &fs);
 				if (res) { put_rc(res); break; }
-				xprintf("FAT type = FAT%u\nBytes/Cluster = %lu\nNumber of FATs = %u\n"
-						"Root DIR entries = %u\nSectors/FAT = %lu\nNumber of clusters = %lu\n"
-						"Volume start (lba) = %lu\nFAT start (lba) = %lu\nDIR start (lba,clustor) = %lu\nData start (lba) = %lu\n\n",
-						ft[fs->fs_type & 3], (DWORD)fs->csize * 512, fs->n_fats,
-						fs->n_rootdir, fs->fsize, (DWORD)fs->n_fatent - 2,
-						fs->volbase, fs->fatbase, fs->dirbase, fs->database);
+				xprintf("FAT type = %s\n", ft[fs->fs_type]);
+				xprintf("Bytes/Cluster = %lu\n", (DWORD)fs->csize * 512);
+				xprintf("Number of FATs = %u\n", fs->n_fats);
+				if (fs->fs_type < FS_FAT32) xprintf("Root DIR entries = %u\n", fs->n_rootdir);
+				xprintf("Sectors/FAT = %lu\n", fs->fsize);
+				xprintf("Number of clusters = %lu\n", (DWORD)fs->n_fatent - 2);
+				xprintf("Volume start (lba) = %lu\n", fs->volbase);
+				xprintf("FAT start (lba) = %lu\n", fs->fatbase);
+				xprintf("FDIR start (lba,clustor) = %lu\n", fs->dirbase);
+				xprintf("Data start (lba) = %lu\n\n", fs->database);
 #if FF_USE_LABEL
 				res = f_getlabel(ptr, (char*)Buff, (DWORD*)&p2);
 				if (res) { put_rc(res); break; }

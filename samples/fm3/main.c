@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------*/
-/* FAT file system sample project for FatFs            (C)ChaN, 2013    */
+/* FAT file system sample project for FatFs            (C)ChaN, 2018    */
 /*----------------------------------------------------------------------*/
 /* Ev.Board: FRK-FM3 from CQ Publishing                                 */
 /* Console: N81 115200bps (port is defined in uart.c)                   */
@@ -212,7 +212,7 @@ int main (void)
 
 	/* Start Debug Monitor */
 	xputs("\nFatFs test monitor for FRK-FM3 evaluation board (?:help)\n");
-	xprintf("LFN=%s, CP=%u\n", _USE_LFN ? "Enabled" : "Disabled", _CODE_PAGE);
+	xprintf("LFN=%s, CP=%u\n", FF_USE_LFN ? "Enabled" : "Disabled", FF_CODE_PAGE);
 
 	for (;;) {
 		xputc('>');
